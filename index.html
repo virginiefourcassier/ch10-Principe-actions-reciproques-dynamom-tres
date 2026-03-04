@@ -28,28 +28,28 @@
     /* Mains réalistes */
     .hand {
       position: absolute;
-      top: 90px;
-      height: 180px;
+      top: 95px;
+      height: 160px;
       pointer-events: none;
     }
     #handLeft {
-      left: -40px;
+      left: -10px;       /* bien collée au bord gauche */
       transform: scaleX(-1);
     }
     #handRight {
-      right: -40px;
+      right: -10px;      /* bien collée au bord droit */
     }
 
-    /* Tiges des dynamomètres */
-    .rod {
+    /* Tige commune (barre grise centrale) */
+    .bar {
       position: absolute;
       top: 165px;
+      left: 130px;
+      width: 640px;
       height: 16px;
       background: #444;
       border-radius: 8px;
     }
-    #rodLeft  { left: 190px; }
-    #rodRight { right: 190px; }
 
     /* Crochets centraux */
     .hook {
@@ -62,8 +62,8 @@
       background: white;
       box-sizing: border-box;
     }
-    #hookLeft  { left: 280px; }
-    #hookRight { right: 280px; }
+    #hookLeft  { left: 260px; }
+    #hookRight { right: 260px; }
 
     /* Points de préhension (rouge / bleu) */
     .dragPoint {
@@ -77,38 +77,38 @@
     }
     #pointLeft {
       background: red;
-      top: 169px;
-      left: 280px;
+      top: 165px;
+      left: 260px;
       transform: translate(-50%, -50%);
     }
     #pointRight {
       background: blue;
-      top: 169px;
-      right: 280px;
+      top: 165px;
+      right: 260px;
       transform: translate(50%, -50%);
     }
 
     /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
-      top: 185px;
-      width: 80px;   /* comme la bande */
-      height: 40px;  /* ≈ hauteur d’un segment visible */
+      top: 190px;
+      width: 80px;
+      height: 40px;
       overflow: hidden;
       border-radius: 4px;
       border: 1px solid #333;
       background: transparent;
     }
-    #windowLeft  { left: 215px; }
-    #windowRight { right: 215px; }
+    #windowLeft  { left: 220px; }
+    #windowRight { right: 220px; }
 
-    /* Bande graduée PNG 0–40 N qui coulisse */
+    /* Bande graduée PNG 0–40 N verticale qui coulisse */
     .tape {
       position: absolute;
       left: 0;
       top: 0;
-      width: 80px;   /* largeur exacte de bande_dynamometre_0_40.png */
-      height: 480px; /* hauteur exacte de l'image */
+      width: 80px;   /* largeur de bande_dynamometre_0_40.png */
+      height: 480px; /* hauteur de l'image */
       background: url("bande_dynamometre_0_40.png") no-repeat top left;
       background-size: 80px 480px;
       transition: top 0.08s linear;
@@ -129,13 +129,12 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains réalistes -->
+    <!-- Mains -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
-    <!-- Tiges des dynamomètres -->
-    <div id="rodLeft"  class="rod"></div>
-    <div id="rodRight" class="rod"></div>
+    <!-- Barre centrale (tige commune) -->
+    <div class="bar"></div>
 
     <!-- Crochets + points de préhension -->
     <div id="hookLeft"  class="hook"></div>
@@ -159,7 +158,7 @@
   </div>
 
   <script>
-    // Paramètres physiques simplifiés
+    // Paramètres "physiques" simplifiés
     const F0 = 10;     // force de base (N)
     const k  = 0.05;   // raideur fictive (N / pixel)
     const L0 = 260;    // longueur au repos entre les points rouge/bleu (px)
@@ -167,8 +166,6 @@
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
     const pointRight = document.getElementById("pointRight");
-    const rodLeft    = document.getElementById("rodLeft");
-    const rodRight   = document.getElementById("rodRight");
     const tapeLeft   = document.getElementById("tapeLeft");
     const tapeRight  = document.getElementById("tapeRight");
 
@@ -181,14 +178,15 @@
       return rect.left + rect.width / 2 - rectScene.left;
     }
 
+    // Zone de déplacement élargie pour permettre plusieurs positions
     function setX(elem, x) {
-      const min = 190;
-      const max = scene.clientWidth - 190;
+      const min = 180;                       // plus près de la main gauche
+      const max = scene.clientWidth - 180;   // plus près de la main droite
       const clamped = Math.max(min, Math.min(max, x));
       elem.style.left = clamped + "px";
     }
 
-    // Renvoie la valeur discrète la plus proche parmi 0,10,20,30,40
+    // Quantification sur {0,10,20,30,40}
     function quantizeForce(F) {
       const values = [0, 10, 20, 30, 40];
       let best = values[0];
@@ -207,30 +205,21 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Tiges
-      rodLeft.style.left  = "190px";
-      rodLeft.style.width = (xL - 190) + "px";
-
-      rodRight.style.left  = xR + "px";
-      rodRight.style.width = (scene.clientWidth - 190 - xR) + "px";
-
-      // Force "continue"
+      // Force "continue" à partir de la distance
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
       const F         = F0 + k * extension;
 
-      // On limite puis on projette sur {0,10,20,30,40}
-      const Fclamped   = Math.max(0, Math.min(40, F));
-      const Fdiscrete  = quantizeForce(Fclamped); // 0,10,20,30 ou 40
+      // Limitation et quantification
+      const Fclamped  = Math.max(0, Math.min(40, F));
+      const Fdiscrete = quantizeForce(Fclamped); // 0,10,20,30,40
 
-      // Défilement de la bande :
-      // 5 segments égaux (0,10,20,30,40) sur 480 px -> 96 px par segment
-      // On centre chaque valeur dans la fenêtre (40 px de haut)
-      const segmentHeight = 96;
-      const visibleHeight = 40;
-      const baseOffset    = (segmentHeight - visibleHeight) / 2; // centrage
+      // Défilement de la bande : 5 segments égaux (0,10,20,30,40) sur 480 px
+      const segmentHeight = 96;      // 480 / 5
+      const visibleHeight = 40;      // hauteur de la fenêtre
+      const baseOffset    = (segmentHeight - visibleHeight) / 2;
 
-      const index = Fdiscrete / 10; // 0,1,2,3,4
+      const index = Fdiscrete / 10;  // 0,1,2,3,4
       const shift = index * segmentHeight + baseOffset;
 
       tapeLeft.style.top  = -shift + "px";
