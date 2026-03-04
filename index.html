@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>3ᵉ loi de Newton - Dynamomètres</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+      user-select: none;
+    }
+    #scene {
+      position: relative;
+      width: 800px;
+      height: 200px;
+      background: white;
+      border: 1px solid #ccc;
+      overflow: hidden;
+    }
+    .hand {
+      position: absolute;
+      top: 70px;
+      width: 120px;
+      height: 60px;
+      background: #f8c29b;
+      border-radius: 30px;
+    }
+    #handLeft { left: 10px; }
+    #handRight { right: 10px; }
+
+    .rod {
+      position: absolute;
+      top: 95px;
+      height: 10px;
+      background: #444;
+    }
+    #rodLeft { left: 120px; }
+    #rodRight { right: 120px; }
+
+    .hook {
+      position: absolute;
+      top: 90px;
+      width: 10px;
+      height: 20px;
+      border: 2px solid #555;
+      border-radius: 50%;
+      background: white;
+    }
+    #hookLeft { left: 210px; }
+    #hookRight { right: 210px; }
+
+    .dragPoint {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #333;
+    }
+    #pointLeft {
+      background: red;
+      top: 98px;
+      left: 198px;
+      transform: translate(-50%, -50%);
+    }
+    #pointRight {
+      background: blue;
+      top: 98px;
+      right: 198px;
+      transform: translate(50%, -50%);
+    }
+
+    .scale {
+      position: absolute;
+      top: 120px;
+      width: 80px;
+      height: 20px;
+      background: #ddd;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    #scaleLeft { left: 150px; }
+    #scaleRight { right: 150px; }
+
+    #info {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="scene">
+    <div id="handLeft" class="hand"></div>
+    <div id="handRight" class="hand"></div>
+
+    <div id="rodLeft" class="rod"></div>
+    <div id="rodRight" class="rod"></div>
+
+    <div id="hookLeft" class="hook"></div>
+    <div id="hookRight" class="hook"></div>
+
+    <div id="pointLeft" class="dragPoint"></div>
+    <div id="pointRight" class="dragPoint"></div>
+
+    <div id="scaleLeft" class="scale">10 N</div>
+    <div id="scaleRight" class="scale">10 N</div>
+  </div>
+
+  <div id="info">
+    Clique et tire sur le point rouge ou bleu : les deux dynamomètres affichent toujours la même force.
+  </div>
+
+  <script>
+    // Paramètres physiques simplifiés
+    const F0 = 10;          // force de base (N)
+    const k = 0.05;         // raideur "ressort" (N / pixel)
+    const L0 = 200;         // longueur au repos (px)
+
+    const scene = document.getElementById("scene");
+    const pointLeft = document.getElementById("pointLeft");
+    const pointRight = document.getElementById("pointRight");
+    const scaleLeft = document.getElementById("scaleLeft");
+    const scaleRight = document.getElementById("scaleRight");
+    const rodLeft = document.getElementById("rodLeft");
+    const rodRight = document.getElementById("rodRight");
+
+    let dragging = null; // "left" ou "right"
+    let offsetX = 0;
+
+    function getX(elem) {
+      const rectScene = scene.getBoundingClientRect();
+      const rect = elem.getBoundingClientRect();
+      return rect.left + rect.width / 2 - rectScene.left;
+    }
+
+    function setX(elem, x) {
+      // Limites pour empêcher de sortir de la scène
+      const min = 50;
+      const max = scene.clientWidth - 50;
+      const clamped = Math.max(min, Math.min(max, x));
+
+      // Positionner par transform pour pointRight (droite) ou pointLeft (gauche)
+      if (elem === pointLeft) {
+        elem.style.left = clamped + "px";
+      } else if (elem === pointRight) {
+        elem.style.left = clamped + "px"; // on passe en "left" pour simplifier
+      }
+    }
+
+    function updateGeometry() {
+      const xL = getX(pointLeft);
+      const xR = getX(pointRight);
+
+      // Met à jour les barres (tiges des dynamomètres)
+      rodLeft.style.left = "120px";
+      rodLeft.style.width = (xL - 120) + "px";
+
+      rodRight.style.left = xR + "px";
+      rodRight.style.width = (scene.clientWidth - 120 - xR) + "px";
+
+      // Calcul de la force commune
+      const distance = Math.abs(xR - xL);
+      const extension = Math.max(0, distance - L0);
+      const F = F0 + k * extension;
+
+      const Frounded = Math.round(F * 10) / 10;
+      scaleLeft.textContent = Frounded + " N";
+      scaleRight.textContent = Frounded + " N";
+    }
+
+    function onMouseDown(e, which) {
+      dragging = which;
+      const target = which === "left" ? pointLeft : pointRight;
+      const rectScene = scene.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
+      offsetX = e.clientX - (rect.left + rect.width / 2 - rectScene.left);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+    }
+
+    function onMouseMove(e) {
+      if (!dragging) return;
+      const rectScene = scene.getBoundingClientRect();
+      const x = e.clientX - rectScene.left - offsetX;
+
+      const target = dragging === "left" ? pointLeft : pointRight;
+      setX(target, x);
+      updateGeometry();
+    }
+
+    function onMouseUp() {
+      dragging = null;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    }
+
+    pointLeft.addEventListener("mousedown", e => onMouseDown(e, "left"));
+    pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
+
+    // Position initiale centrée
+    function initPositions() {
+      const mid = scene.clientWidth / 2;
+      setX(pointLeft, mid - L0 / 2);
+      setX(pointRight, mid + L0 / 2);
+      updateGeometry();
+    }
+
+    window.addEventListener("load", initPositions);
+    window.addEventListener("resize", initPositions);
+  </script>
+</body>
+</html>
