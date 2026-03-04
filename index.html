@@ -15,6 +15,7 @@
       background: #f5f5f5;
       user-select: none;
     }
+
     #scene {
       position: relative;
       width: 900px;
@@ -27,12 +28,12 @@
     /* Mains réalistes */
     .hand {
       position: absolute;
-      top: 90px;          /* légèrement plus bas pour être bien visibles */
+      top: 90px;
       height: 180px;
       pointer-events: none;
     }
     #handLeft {
-      left: -40px;        /* on décale un peu vers l'extérieur */
+      left: -40px;
       transform: scaleX(-1);
     }
     #handRight {
@@ -87,37 +88,29 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres */
+    /* Fenêtres des dynamomètres (vision d'une valeur) */
     .window {
       position: absolute;
       top: 185px;
-      width: 70px;
-      height: 28px;
+      width: 80px;   /* comme la bande */
+      height: 40px;  /* environ un segment visible */
       overflow: hidden;
       border-radius: 4px;
       border: 1px solid #333;
-      background: #ddd;
+      background: transparent;
     }
     #windowLeft  { left: 215px; }
     #windowRight { right: 215px; }
 
-    /* Bande graduée qui coulisse */
+    /* Bande graduée PNG qui coulisse */
     .tape {
       position: absolute;
       left: 0;
       top: 0;
-      width: 70px;
-      height: 280px;
-      background: linear-gradient(
-        to bottom,
-        #b00 0 40px,
-        #d33 40px 80px,
-        #f55 80px 120px,
-        #fff 120px 160px,
-        #ddd 160px 200px,
-        #bbb 200px 240px,
-        #999 240px 280px
-      );
+      width: 80px;   /* largeur exacte de l'image */
+      height: 480px; /* hauteur exacte de l'image */
+      background: url("bande_dynamometre_0_40.png") no-repeat top left;
+      background-size: 80px 480px;
       transition: top 0.08s linear;
     }
 
@@ -136,7 +129,7 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains réalistes (nom de fichier corrigé pour la gauche) -->
+    <!-- Mains réalistes -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
@@ -166,9 +159,10 @@
   </div>
 
   <script>
-    const F0 = 10;
-    const k  = 0.05;
-    const L0 = 260;
+    // Paramètres "physiques" simplifiés
+    const F0 = 10;     // force de base (N)
+    const k  = 0.05;   // raideur fictive (N / pixel)
+    const L0 = 260;    // longueur au repos entre les points rouge/bleu (px)
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
@@ -198,19 +192,27 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
+      // Mise à jour des tiges
       rodLeft.style.left  = "190px";
       rodLeft.style.width = (xL - 190) + "px";
 
       rodRight.style.left  = xR + "px";
       rodRight.style.width = (scene.clientWidth - 190 - xR) + "px";
 
+      // Force commune (modèle ressort)
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
       const F         = F0 + k * extension;
+
+      // limitation 0–40 N pour coller à l'image
       const Fclamped  = Math.max(0, Math.min(40, F));
 
-      const maxShift = 200;
-      const shift    = (Fclamped / 40) * maxShift;
+      // Projection de la force sur le défilement de la bande :
+      // image 480 px de haut, fenêtre 40 px de haut -> environ 440 px de course utile
+      const visibleHeight = 40;
+      const totalHeight   = 480;
+      const maxShift      = totalHeight - visibleHeight;  // ≈ 440 px
+      const shift         = (Fclamped / 40) * maxShift;
 
       tapeLeft.style.top  = -shift + "px";
       tapeRight.style.top = -shift + "px";
