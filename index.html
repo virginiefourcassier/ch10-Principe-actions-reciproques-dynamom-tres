@@ -43,8 +43,7 @@
       object-fit: contain;
       pointer-events: none;
     }
-    #dynamoLeft  { left: 170px; }
-    #dynamoRight { right: 170px; }
+    /* on ne fixe plus left/right : ils sont pilotés par le JS */
 
     /* Points rouge / bleu */
     .dragPoint {
@@ -59,13 +58,11 @@
     #pointLeft {
       background: red;
       top: 180px;
-      left: 260px;
       transform: translate(-50%, -50%);
     }
     #pointRight {
       background: blue;
       top: 180px;
-      right: 260px;
       transform: translate(50%, -50%);
     }
 
@@ -80,8 +77,6 @@
       border: 1px solid #333;
       background: white;
     }
-    #windowLeft  { left: 260px; transform: translateX(-50%); }
-    #windowRight { right: 260px; transform: translateX(50%); }
 
     /* Bande 0–10 N horizontale (622 x 136) */
     .tape {
@@ -125,7 +120,7 @@
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
-    <!-- Fenêtres & bandes -->
+    <!-- Fenêtres & bandes (positionnées sous le centre des dynamomètres) -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -147,12 +142,19 @@
     const k  = 0.04;
     const L0 = 260;
 
-    const scene      = document.getElementById("scene");
-    const pointLeft  = document.getElementById("pointLeft");
-    const pointRight = document.getElementById("pointRight");
-    const tapeLeft   = document.getElementById("tapeLeft");
-    const tapeRight  = document.getElementById("tapeRight");
-    const resetBtn   = document.getElementById("resetBtn");
+    const scene       = document.getElementById("scene");
+    const pointLeft   = document.getElementById("pointLeft");
+    const pointRight  = document.getElementById("pointRight");
+    const dynamoLeft  = document.getElementById("dynamoLeft");
+    const dynamoRight = document.getElementById("dynamoRight");
+    const windowLeft  = document.getElementById("windowLeft");
+    const windowRight = document.getElementById("windowRight");
+    const tapeLeft    = document.getElementById("tapeLeft");
+    const tapeRight   = document.getElementById("tapeRight");
+    const resetBtn    = document.getElementById("resetBtn");
+
+    // Largeur "visible" supposée d'un dynamomètre dans la scène
+    const DYN_WIDTH = 260;   // ajuste si besoin (px)
 
     let dragging = null;
 
@@ -162,13 +164,14 @@
       return rect.left + rect.width / 2 - rectScene.left;
     }
 
-    function setX(elem, x) {
-      const min = 180;
-      const max = scene.clientWidth - 180;
+    function setPointX(elem, x) {
+      const min = 100;
+      const max = scene.clientWidth - 100;
       const clamped = Math.max(min, Math.min(max, x));
       elem.style.left = clamped + "px";
     }
 
+    // force quantifiée 0..10
     function quantizeForce(F) {
       const values = [];
       for (let i = 0; i <= 10; i++) values.push(i);
@@ -184,7 +187,28 @@
       return best;
     }
 
-    function updateGeometry() {
+    function updateDynamometersPositions() {
+      const xL = getX(pointLeft);
+      const xR = getX(pointRight);
+
+      // dynamomètre gauche : son extrémité gauche (crochet) est au niveau du point rouge
+      dynamoLeft.style.left = (xL - 5) + "px";  // petit ajustement si besoin
+      dynamoLeft.style.width = DYN_WIDTH + "px";
+
+      // fenêtre gauche centrée sur le corps du dynamomètre
+      windowLeft.style.left = (xL + DYN_WIDTH / 2) + "px";
+      windowLeft.style.transform = "translateX(-50%)";
+
+      // dynamomètre droit : son extrémité droite (crochet) est au niveau du point bleu
+      dynamoRight.style.left = (xR - DYN_WIDTH + 5) + "px";
+      dynamoRight.style.width = DYN_WIDTH + "px";
+
+      // fenêtre droite centrée sur le corps du dynamomètre
+      windowRight.style.left = (xR - DYN_WIDTH / 2) + "px";
+      windowRight.style.transform = "translateX(-50%)";
+    }
+
+    function updateForceAndTapes() {
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
@@ -208,6 +232,11 @@
       tapeRight.style.left = -shift + "px";
     }
 
+    function updateAll() {
+      updateDynamometersPositions();
+      updateForceAndTapes();
+    }
+
     function onMouseDown(e, which) {
       dragging = which;
       window.addEventListener("mousemove", onMouseMove);
@@ -218,10 +247,10 @@
     function onMouseMove(e) {
       if (!dragging) return;
       const rectScene = scene.getBoundingClientRect();
+      const x = e.clientX - rectScene.left;
       const target = dragging === "left" ? pointLeft : pointRight;
-      const newX = e.clientX - rectScene.left;
-      setX(target, newX);
-      updateGeometry();
+      setPointX(target, x);
+      updateAll();
     }
 
     function onMouseUp() {
@@ -235,9 +264,11 @@
 
     function initPositions() {
       const mid = scene.clientWidth / 2;
-      setX(pointLeft,  mid - L0 / 2);
-      setX(pointRight, mid + L0 / 2);
-      updateGeometry();
+      const xL = mid - L0 / 2;
+      const xR = mid + L0 / 2;
+      pointLeft.style.left  = xL + "px";
+      pointRight.style.left = xR + "px";
+      updateAll();
     }
 
     resetBtn.addEventListener("click", initPositions);
