@@ -88,12 +88,12 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres (vision d'une valeur) */
+    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 185px;
       width: 80px;   /* comme la bande */
-      height: 40px;  /* environ un segment visible */
+      height: 40px;  /* ≈ hauteur d’un segment visible */
       overflow: hidden;
       border-radius: 4px;
       border: 1px solid #333;
@@ -102,12 +102,12 @@
     #windowLeft  { left: 215px; }
     #windowRight { right: 215px; }
 
-    /* Bande graduée PNG qui coulisse */
+    /* Bande graduée PNG 0–40 N qui coulisse */
     .tape {
       position: absolute;
       left: 0;
       top: 0;
-      width: 80px;   /* largeur exacte de l'image */
+      width: 80px;   /* largeur exacte de bande_dynamometre_0_40.png */
       height: 480px; /* hauteur exacte de l'image */
       background: url("bande_dynamometre_0_40.png") no-repeat top left;
       background-size: 80px 480px;
@@ -159,7 +159,7 @@
   </div>
 
   <script>
-    // Paramètres "physiques" simplifiés
+    // Paramètres physiques simplifiés
     const F0 = 10;     // force de base (N)
     const k  = 0.05;   // raideur fictive (N / pixel)
     const L0 = 260;    // longueur au repos entre les points rouge/bleu (px)
@@ -188,31 +188,50 @@
       elem.style.left = clamped + "px";
     }
 
+    // Renvoie la valeur discrète la plus proche parmi 0,10,20,30,40
+    function quantizeForce(F) {
+      const values = [0, 10, 20, 30, 40];
+      let best = values[0];
+      let bestDiff = Math.abs(F - best);
+      for (let i = 1; i < values.length; i++) {
+        const diff = Math.abs(F - values[i]);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          best = values[i];
+        }
+      }
+      return best;
+    }
+
     function updateGeometry() {
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Mise à jour des tiges
+      // Tiges
       rodLeft.style.left  = "190px";
       rodLeft.style.width = (xL - 190) + "px";
 
       rodRight.style.left  = xR + "px";
       rodRight.style.width = (scene.clientWidth - 190 - xR) + "px";
 
-      // Force commune (modèle ressort)
+      // Force "continue"
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
       const F         = F0 + k * extension;
 
-      // limitation 0–40 N pour coller à l'image
-      const Fclamped  = Math.max(0, Math.min(40, F));
+      // On limite puis on projette sur {0,10,20,30,40}
+      const Fclamped   = Math.max(0, Math.min(40, F));
+      const Fdiscrete  = quantizeForce(Fclamped); // 0,10,20,30 ou 40
 
-      // Projection de la force sur le défilement de la bande :
-      // image 480 px de haut, fenêtre 40 px de haut -> environ 440 px de course utile
+      // Défilement de la bande :
+      // 5 segments égaux (0,10,20,30,40) sur 480 px -> 96 px par segment
+      // On centre chaque valeur dans la fenêtre (40 px de haut)
+      const segmentHeight = 96;
       const visibleHeight = 40;
-      const totalHeight   = 480;
-      const maxShift      = totalHeight - visibleHeight;  // ≈ 440 px
-      const shift         = (Fclamped / 40) * maxShift;
+      const baseOffset    = (segmentHeight - visibleHeight) / 2; // centrage
+
+      const index = Fdiscrete / 10; // 0,1,2,3,4
+      const shift = index * segmentHeight + baseOffset;
 
       tapeLeft.style.top  = -shift + "px";
       tapeRight.style.top = -shift + "px";
