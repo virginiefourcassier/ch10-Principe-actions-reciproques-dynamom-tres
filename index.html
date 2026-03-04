@@ -33,10 +33,10 @@
       pointer-events: none;
     }
     #handLeft {
-      left: 20px;
+      left: 20px;     /* main gauche bien visible à gauche */
     }
     #handRight {
-      right: 20px;
+      right: 20px;    /* main droite bien visible à droite */
     }
 
     /* Barre commune */
@@ -132,17 +132,21 @@
 </head>
 <body>
   <div id="scene">
+    <!-- Mains -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
+    <!-- Barre centrale -->
     <div class="bar"></div>
 
+    <!-- Crochets + points -->
     <div id="hookLeft"  class="hook"></div>
     <div id="hookRight" class="hook"></div>
 
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
+    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -171,7 +175,7 @@
     const tapeRight  = document.getElementById("tapeRight");
     const resetBtn   = document.getElementById("resetBtn");
 
-    let dragging = null; // "left" ou "right"
+    let dragging = null;
 
     function getX(elem) {
       const rectScene = scene.getBoundingClientRect();
@@ -226,14 +230,14 @@
       dragging = which;
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
-      // on déclenche tout de suite un update (mais sans bouger tant que la souris ne bouge pas)
+      e.preventDefault();
     }
 
     function onMouseMove(e) {
       if (!dragging) return;
       const rectScene = scene.getBoundingClientRect();
       const target = dragging === "left" ? pointLeft : pointRight;
-      const newX = e.clientX - rectScene.left;   // centre du point sous la souris
+      const newX = e.clientX - rectScene.left;
       setX(target, newX);
       updateGeometry();
     }
@@ -244,8 +248,8 @@
       window.removeEventListener("mouseup", onMouseUp);
     }
 
-    pointLeft.addEventListener("mousedown", e => { e.preventDefault(); onMouseDown(e, "left"); });
-    pointRight.addEventListener("mousedown", e => { e.preventDefault(); onMouseDown(e, "right"); });
+    pointLeft.addEventListener("mousedown", e => onMouseDown(e, "left"));
+    pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
       const mid = scene.clientWidth / 2;
@@ -255,7 +259,6 @@
     }
 
     resetBtn.addEventListener("click", initPositions);
-
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
   </script>
