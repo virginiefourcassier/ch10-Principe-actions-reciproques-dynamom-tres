@@ -25,22 +25,28 @@
       overflow: hidden;
     }
 
-    /* Dynamomètres en images */
+    /* Mains */
+    .hand {
+      position: absolute;
+      top: 95px;
+      height: 160px;
+      pointer-events: none;
+    }
+    #handLeft  { left: 20px; }
+    #handRight { right: 20px; }
+
+    /* Dynamomètres */
     .dynamo {
       position: absolute;
       top: 150px;
-      height: 60px;          /* réduction de l’image */
+      height: 60px;
       object-fit: contain;
       pointer-events: none;
     }
-    #dynamoLeft {
-      left: 170px;
-    }
-    #dynamoRight {
-      right: 170px;
-    }
+    #dynamoLeft  { left: 170px; }
+    #dynamoRight { right: 170px; }
 
-    /* Points rouge / bleu (accrochés aux crochets) */
+    /* Points rouge / bleu */
     .dragPoint {
       position: absolute;
       width: 24px;
@@ -67,7 +73,7 @@
     .window {
       position: absolute;
       top: 210px;
-      width: 60px;          /* largeur ≈ largeur d'une case */
+      width: 60px;
       height: 40px;
       overflow: hidden;
       border-radius: 4px;
@@ -83,7 +89,7 @@
       top: 0;
       left: 0;
       width: 622px;
-      height: 40px;   /* on ne garde que la bande centrale en hauteur */
+      height: 40px;
       background: url("bande_dynamometre_0_10_h.png") no-repeat left center;
       background-size: 622px 40px;
       transition: left 0.08s linear;
@@ -107,9 +113,13 @@
 </head>
 <body>
   <div id="scene">
+    <!-- Mains -->
+    <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
+    <img id="handRight" class="hand" src="maindroite.png" alt="">
+
     <!-- Dynamomètres -->
-    <img id="dynamoLeft"  class="dynamo" src="dynamo_g.jpg"  alt="">
-    <img id="dynamoRight" class="dynamo" src="dynamo_d.jpg"  alt="">
+    <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
+    <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
     <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
@@ -133,10 +143,9 @@
   </div>
 
   <script>
-    // Paramètres "physiques"
-    const F0 = 0;      // commence à 0 N
-    const k  = 0.04;   // raideur fictive (ajuste si besoin)
-    const L0 = 260;    // longueur au repos entre points rouge/bleu (px)
+    const F0 = 0;
+    const k  = 0.04;
+    const L0 = 260;
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
@@ -160,7 +169,6 @@
       elem.style.left = clamped + "px";
     }
 
-    // Quantification sur 0,1,2,...,10 N
     function quantizeForce(F) {
       const values = [];
       for (let i = 0; i <= 10; i++) values.push(i);
@@ -182,15 +190,14 @@
 
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
-      const F         = F0 + k * extension;      // N
+      const F         = F0 + k * extension;
 
       const Fclamped  = Math.max(0, Math.min(10, F));
-      const Fdiscrete = quantizeForce(Fclamped); // 0..10
+      const Fdiscrete = quantizeForce(Fclamped);
 
-      // Bande 0–10 N : 622 px, 11 cases => largeur_case ≈ 622 / 11
       const tapeWidth    = 622;
       const nbValues     = 11;
-      const segmentWidth = tapeWidth / nbValues; // ≈ 56.5 px
+      const segmentWidth = tapeWidth / nbValues;
       const windowWidth  = 60;
       const baseOffset   = (segmentWidth - windowWidth) / 2;
 
