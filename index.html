@@ -25,7 +25,6 @@
       overflow: hidden;
     }
 
-    /* Mains */
     .hand {
       position: absolute;
       top: 95px;
@@ -35,7 +34,6 @@
     #handLeft  { left: 20px; }
     #handRight { right: 20px; }
 
-    /* Dynamomètres */
     .dynamo {
       position: absolute;
       top: 150px;
@@ -44,17 +42,15 @@
       pointer-events: none;
     }
 
-    /* Crochet central entre les deux dynamomètres */
     #crochet {
       position: absolute;
-      top: 168px;          /* ajuste verticalement si besoin */
+      top: 168px;
       width: 28px;
       height: 28px;
       transform: translate(-50%, -50%);
       pointer-events: none;
     }
 
-    /* Points rouge / bleu */
     .dragPoint {
       position: absolute;
       width: 24px;
@@ -75,7 +71,6 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 210px;
@@ -87,7 +82,6 @@
       background: white;
     }
 
-    /* Bande 0–10 N horizontale (622 x 136) */
     .tape {
       position: absolute;
       top: 0;
@@ -117,22 +111,17 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.png" alt="">
 
-    <!-- Dynamomètres -->
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
-    <!-- Crochet central -->
     <img id="crochet" src="crochet.png" alt="">
 
-    <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
-    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -153,6 +142,7 @@
     const F0 = 0;
     const k  = 0.04;
     const L0 = 260;
+    const DYN_WIDTH = 260;   // longueur visible d’un dynamomètre
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -166,8 +156,6 @@
     const tapeRight   = document.getElementById("tapeRight");
     const resetBtn    = document.getElementById("resetBtn");
 
-    const DYN_WIDTH = 260;   // longueur visible d’un dynamomètre (à ajuster)
-
     let dragging = null;
 
     function getX(elem) {
@@ -176,11 +164,18 @@
       return rect.left + rect.width / 2 - rectScene.left;
     }
 
-    function setPointX(elem, x) {
-      const min = 100;
-      const max = scene.clientWidth - 100;
+    function setPointXLeft(x) {
+      const min = 120;                    // reste à gauche
+      const max = scene.clientWidth / 2;  // ne dépasse pas le centre
       const clamped = Math.max(min, Math.min(max, x));
-      elem.style.left = clamped + "px";
+      pointLeft.style.left = clamped + "px";
+    }
+
+    function setPointXRight(x) {
+      const min = scene.clientWidth / 2;            // reste à droite
+      const max = scene.clientWidth - 120;
+      const clamped = Math.max(min, Math.min(max, x));
+      pointRight.style.left = clamped + "px";
     }
 
     function quantizeForce(F) {
@@ -202,21 +197,17 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Dynamomètre gauche : crochet à gauche, corps vers la droite
-      dynamoLeft.style.left  = (xL - 5) + "px";   // petit offset si besoin
+      dynamoLeft.style.left  = (xL - 5) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
-      // Dynamomètre droit : crochet à droite, corps vers la gauche
       dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      // Crochet central exactement au milieu entre les deux extrémités intérieures
-      const innerLeftEnd  = xL + (DYN_WIDTH - 10); // extrémité centrale du dynamo gauche
-      const innerRightEnd = xR - (DYN_WIDTH - 10); // extrémité centrale du dynamo droit
+      const innerLeftEnd  = xL + (DYN_WIDTH - 10);
+      const innerRightEnd = xR - (DYN_WIDTH - 10);
       const cx = (innerLeftEnd + innerRightEnd) / 2;
       crochet.style.left = cx + "px";
 
-      // Fenêtres centrées sur les corps des dynamomètres
       windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
       windowLeft.style.transform = "translateX(-50%)";
 
@@ -241,7 +232,7 @@
       const windowWidth  = 60;
       const baseOffset   = (segmentWidth - windowWidth) / 2;
 
-      const index = Fdiscrete; // 0..10
+      const index = Fdiscrete;
       const shift = index * segmentWidth + baseOffset;
 
       tapeLeft.style.left  = -shift + "px";
@@ -264,8 +255,11 @@
       if (!dragging) return;
       const rectScene = scene.getBoundingClientRect();
       const x = e.clientX - rectScene.left;
-      const target = dragging === "left" ? pointLeft : pointRight;
-      setPointX(target, x);
+      if (dragging === "left") {
+        setPointXLeft(x);
+      } else {
+        setPointXRight(x);
+      }
       updateAll();
     }
 
