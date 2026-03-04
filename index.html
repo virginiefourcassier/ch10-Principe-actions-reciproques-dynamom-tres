@@ -31,9 +31,10 @@
       height: 160px;
       pointer-events: none;
     }
-    /* on ne bouge plus la main gauche */
-    #handLeft  { left: 20px; top: 110px; }
-    #handRight { right: 20px; top: 95px; }
+    /* 1) descendre un peu la main gauche, 2) décaler vers la droite */
+    #handLeft  { left: 40px; top: 120px; }
+    /* 4) main droite à la même hauteur que la main gauche */
+    #handRight { right: 40px; top: 120px; }
 
     /* Dynamomètres */
     .dynamo {
@@ -153,7 +154,7 @@
     const F0 = 0;
     const k  = 0.04;
     const L0 = 260;
-    const DYN_WIDTH = 260;   // longueur visible utilisée pour le calcul du décalage
+    const DYN_WIDTH = 260;   // longueur visible utilisée
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -208,21 +209,17 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // dynamomètre gauche, lié au point rouge
       dynamoLeft.style.left  = (xL - 5) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
-      // dynamomètre droit, lié au point bleu
       dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      // crochet central entre les extrémités internes
       const innerLeftEnd  = xL + (DYN_WIDTH - 10);
       const innerRightEnd = xR - (DYN_WIDTH - 10);
       const cx = (innerLeftEnd + innerRightEnd) / 2;
       crochet.style.left = cx + "px";
 
-      // fenêtres centrées sur les corps
       windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
       windowLeft.style.transform = "translateX(-50%)";
 
@@ -288,11 +285,13 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // Position de référence précédente ~320 px
+      // point rouge : base 320, décalé de 0.6 * DYN_WIDTH vers la gauche
       const baseXL = 320;
-      const decal  = 0.6 * DYN_WIDTH;     // déplacement vers la gauche
-      const xL = baseXL - decal;          // ≈ 164 px
-      const xR = xL + L0;
+      const decal  = 0.6 * DYN_WIDTH;   // 0,6 longueur du dynamomètre
+      const xL = baseXL - decal;        // ≈ 164 px
+
+      // 3) décaler le point bleu + dynamomètre droit d'une longueur de dynamomètre vers la droite
+      const xR = xL + L0 + DYN_WIDTH;   // L0 + une longueur de dynamomètre
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
