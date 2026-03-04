@@ -24,19 +24,19 @@
       overflow: hidden;
     }
 
-    /* Mains (remplacent les rectangles approximatifs) */
+    /* Mains réalistes */
     .hand {
       position: absolute;
-      top: 80px;
+      top: 90px;          /* légèrement plus bas pour être bien visibles */
       height: 180px;
-      pointer-events: none; /* on ne les attrape pas à la souris */
+      pointer-events: none;
     }
     #handLeft {
-      left: 0;
-      transform: scaleX(-1); /* on retourne l'image de gauche si besoin */
+      left: -40px;        /* on décale un peu vers l'extérieur */
+      transform: scaleX(-1);
     }
     #handRight {
-      right: 0;
+      right: -40px;
     }
 
     /* Tiges des dynamomètres */
@@ -47,10 +47,10 @@
       background: #444;
       border-radius: 8px;
     }
-    #rodLeft { left: 190px; }
+    #rodLeft  { left: 190px; }
     #rodRight { right: 190px; }
 
-    /* Crochets centraux (pour accrocher la "corde") */
+    /* Crochets centraux */
     .hook {
       position: absolute;
       top: 157px;
@@ -61,7 +61,7 @@
       background: white;
       box-sizing: border-box;
     }
-    #hookLeft { left: 280px; }
+    #hookLeft  { left: 280px; }
     #hookRight { right: 280px; }
 
     /* Points de préhension (rouge / bleu) */
@@ -87,7 +87,7 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres (où défileront les graduations) */
+    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 185px;
@@ -98,16 +98,16 @@
       border: 1px solid #333;
       background: #ddd;
     }
-    #windowLeft { left: 215px; }
+    #windowLeft  { left: 215px; }
     #windowRight { right: 215px; }
 
-    /* Bande graduée qui coulisse à l'intérieur de la fenêtre */
+    /* Bande graduée qui coulisse */
     .tape {
       position: absolute;
       left: 0;
       top: 0;
       width: 70px;
-      height: 280px; /* assez long pour plusieurs graduations */
+      height: 280px;
       background: linear-gradient(
         to bottom,
         #b00 0 40px,
@@ -127,7 +127,6 @@
       min-height: 1.2em;
     }
 
-    /* Signature */
     #signature {
       margin-top: 2px;
       font-size: 12px;
@@ -137,9 +136,9 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains réalistes -->
-    <img id="handLeft"  class="hand" src="maingauche.jpg" alt="">
-    <img id="handRight" class="hand" src="maindroite.jpg"  alt="">
+    <!-- Mains réalistes (nom de fichier corrigé pour la gauche) -->
+    <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
+    <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
     <!-- Tiges des dynamomètres -->
     <div id="rodLeft"  class="rod"></div>
@@ -162,13 +161,14 @@
   </div>
 
   <div id="info"></div>
-  <div id="signature">Animation adaptée et codée par Virginie Fourcassier – Lycée Pierre de Fermat – Toulouse.</div>
+  <div id="signature">
+    Animation adaptée et codée par Virginie Fourcassier – Lycée Pierre de Fermat – Toulouse.
+  </div>
 
   <script>
-    // Paramètres "physiques" simplifiés
-    const F0 = 10;     // force de base (N)
-    const k  = 0.05;   // raideur fictive (N / pixel)
-    const L0 = 260;    // longueur au repos entre les points rouge/bleu (px)
+    const F0 = 10;
+    const k  = 0.05;
+    const L0 = 260;
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
@@ -178,7 +178,7 @@
     const tapeLeft   = document.getElementById("tapeLeft");
     const tapeRight  = document.getElementById("tapeRight");
 
-    let dragging = null; // "left" ou "right"
+    let dragging = null;
     let offsetX  = 0;
 
     function getX(elem) {
@@ -188,8 +188,8 @@
     }
 
     function setX(elem, x) {
-      const min = 190;                          // proche de la main gauche
-      const max = scene.clientWidth - 190;      // proche de la main droite
+      const min = 190;
+      const max = scene.clientWidth - 190;
       const clamped = Math.max(min, Math.min(max, x));
       elem.style.left = clamped + "px";
     }
@@ -198,22 +198,18 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Mise à jour des tiges
       rodLeft.style.left  = "190px";
       rodLeft.style.width = (xL - 190) + "px";
 
       rodRight.style.left  = xR + "px";
       rodRight.style.width = (scene.clientWidth - 190 - xR) + "px";
 
-      // Force commune (modèle ressort)
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
-      const F         = F0 + k * extension;   // N
+      const F         = F0 + k * extension;
       const Fclamped  = Math.max(0, Math.min(40, F));
 
-      // On projette la force sur un défilement vertical de la bande graduée
-      // 0 N -> bande en haut, 40 N -> bande en bas
-      const maxShift = 200; // pixels de course utile sur la bande
+      const maxShift = 200;
       const shift    = (Fclamped / 40) * maxShift;
 
       tapeLeft.style.top  = -shift + "px";
@@ -222,7 +218,7 @@
 
     function onMouseDown(e, which) {
       dragging = which;
-      const target   = which === "left" ? pointLeft : pointRight;
+      const target    = which === "left" ? pointLeft : pointRight;
       const rectScene = scene.getBoundingClientRect();
       const rect      = target.getBoundingClientRect();
       offsetX = e.clientX - (rect.left + rect.width / 2 - rectScene.left);
