@@ -43,7 +43,16 @@
       object-fit: contain;
       pointer-events: none;
     }
-    /* on ne fixe plus left/right : ils sont pilotés par le JS */
+
+    /* Crochet central entre les deux dynamomètres */
+    #crochet {
+      position: absolute;
+      top: 168px;          /* ajuste verticalement si besoin */
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
 
     /* Points rouge / bleu */
     .dragPoint {
@@ -116,11 +125,14 @@
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
+    <!-- Crochet central -->
+    <img id="crochet" src="crochet.png" alt="">
+
     <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
-    <!-- Fenêtres & bandes (positionnées sous le centre des dynamomètres) -->
+    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -147,14 +159,14 @@
     const pointRight  = document.getElementById("pointRight");
     const dynamoLeft  = document.getElementById("dynamoLeft");
     const dynamoRight = document.getElementById("dynamoRight");
+    const crochet     = document.getElementById("crochet");
     const windowLeft  = document.getElementById("windowLeft");
     const windowRight = document.getElementById("windowRight");
     const tapeLeft    = document.getElementById("tapeLeft");
     const tapeRight   = document.getElementById("tapeRight");
     const resetBtn    = document.getElementById("resetBtn");
 
-    // Largeur "visible" supposée d'un dynamomètre dans la scène
-    const DYN_WIDTH = 260;   // ajuste si besoin (px)
+    const DYN_WIDTH = 260;   // longueur visible d’un dynamomètre (à ajuster)
 
     let dragging = null;
 
@@ -171,7 +183,6 @@
       elem.style.left = clamped + "px";
     }
 
-    // force quantifiée 0..10
     function quantizeForce(F) {
       const values = [];
       for (let i = 0; i <= 10; i++) values.push(i);
@@ -187,23 +198,28 @@
       return best;
     }
 
-    function updateDynamometersPositions() {
+    function updateDynamometersAndCrochet() {
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // dynamomètre gauche : son extrémité gauche (crochet) est au niveau du point rouge
-      dynamoLeft.style.left = (xL - 5) + "px";  // petit ajustement si besoin
+      // Dynamomètre gauche : crochet à gauche, corps vers la droite
+      dynamoLeft.style.left  = (xL - 5) + "px";   // petit offset si besoin
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
-      // fenêtre gauche centrée sur le corps du dynamomètre
-      windowLeft.style.left = (xL + DYN_WIDTH / 2) + "px";
-      windowLeft.style.transform = "translateX(-50%)";
-
-      // dynamomètre droit : son extrémité droite (crochet) est au niveau du point bleu
-      dynamoRight.style.left = (xR - DYN_WIDTH + 5) + "px";
+      // Dynamomètre droit : crochet à droite, corps vers la gauche
+      dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      // fenêtre droite centrée sur le corps du dynamomètre
+      // Crochet central exactement au milieu entre les deux extrémités intérieures
+      const innerLeftEnd  = xL + (DYN_WIDTH - 10); // extrémité centrale du dynamo gauche
+      const innerRightEnd = xR - (DYN_WIDTH - 10); // extrémité centrale du dynamo droit
+      const cx = (innerLeftEnd + innerRightEnd) / 2;
+      crochet.style.left = cx + "px";
+
+      // Fenêtres centrées sur les corps des dynamomètres
+      windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
+      windowLeft.style.transform = "translateX(-50%)";
+
       windowRight.style.left = (xR - DYN_WIDTH / 2) + "px";
       windowRight.style.transform = "translateX(-50%)";
     }
@@ -233,7 +249,7 @@
     }
 
     function updateAll() {
-      updateDynamometersPositions();
+      updateDynamometersAndCrochet();
       updateForceAndTapes();
     }
 
