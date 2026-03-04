@@ -31,11 +31,10 @@
       height: 160px;
       pointer-events: none;
     }
-    /* main gauche un peu plus basse et décalée */
-    #handLeft  { left: 20px; top: 110px; }
+    /* main gauche un peu plus basse qu'avant (top: 120 au lieu de 110) */
+    #handLeft  { left: 20px; top: 120px; }
     #handRight { right: 20px; top: 95px; }
 
-    /* Dynamomètres */
     .dynamo {
       position: absolute;
       top: 150px;
@@ -44,7 +43,6 @@
       pointer-events: none;
     }
 
-    /* Crochet central */
     #crochet {
       position: absolute;
       top: 168px;
@@ -54,7 +52,6 @@
       pointer-events: none;
     }
 
-    /* Points rouge / bleu */
     .dragPoint {
       position: absolute;
       width: 24px;
@@ -75,7 +72,6 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 210px;
@@ -87,7 +83,6 @@
       background: white;
     }
 
-    /* Bande 0–10 N horizontale (622 x 136) */
     .tape {
       position: absolute;
       top: 0;
@@ -279,8 +274,8 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // on place le point rouge à x=320 comme tu l’as mesuré
-      const xL = 320;
+      // on place le point rouge un peu plus à gauche pour qu'il chevauche la main
+      const xL = 290;          // au lieu de 320
       const xR = xL + L0;
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
