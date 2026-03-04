@@ -32,11 +32,9 @@
       height: 160px;
       pointer-events: none;
     }
-    /* main gauche : image déjà orientée correctement, on ne la retourne pas */
     #handLeft {
-      left: 20px;       /* bien visible à gauche dans le cadre */
+      left: 20px;
     }
-    /* main droite à droite du cadre */
     #handRight {
       right: 20px;
     }
@@ -134,21 +132,17 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains (gauche et droite) -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
-    <!-- Barre centrale -->
     <div class="bar"></div>
 
-    <!-- Crochets + points -->
     <div id="hookLeft"  class="hook"></div>
     <div id="hookRight" class="hook"></div>
 
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
-    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -166,9 +160,9 @@
   </div>
 
   <script>
-    const F0 = 10;   // N
-    const k  = 0.05; // N / pixel
-    const L0 = 260;  // px
+    const F0 = 10;
+    const k  = 0.05;
+    const L0 = 260;
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
@@ -177,8 +171,7 @@
     const tapeRight  = document.getElementById("tapeRight");
     const resetBtn   = document.getElementById("resetBtn");
 
-    let dragging = null;
-    let offsetX  = 0;
+    let dragging = null; // "left" ou "right"
 
     function getX(elem) {
       const rectScene = scene.getBoundingClientRect();
@@ -218,12 +211,11 @@
       const Fclamped  = Math.max(0, Math.min(40, F));
       const Fdiscrete = quantizeForce(Fclamped);
 
-      // Image 1000 px large, 5 cases -> 200 px par case
       const segmentWidth = 200;
       const windowWidth  = 80;
       const baseOffset   = (segmentWidth - windowWidth) / 2;
 
-      const index = Fdiscrete / 10; // 0..4
+      const index = Fdiscrete / 10;
       const shift = index * segmentWidth + baseOffset;
 
       tapeLeft.style.left  = -shift + "px";
@@ -232,20 +224,17 @@
 
     function onMouseDown(e, which) {
       dragging = which;
-      const target    = which === "left" ? pointLeft : pointRight;
-      const rectScene = scene.getBoundingClientRect();
-      const rect      = target.getBoundingClientRect();
-      offsetX = e.clientX - (rect.left + rect.width / 2 - rectScene.left);
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
+      // on déclenche tout de suite un update (mais sans bouger tant que la souris ne bouge pas)
     }
 
     function onMouseMove(e) {
       if (!dragging) return;
       const rectScene = scene.getBoundingClientRect();
-      const x = e.clientX - rectScene.left - offsetX;
       const target = dragging === "left" ? pointLeft : pointRight;
-      setX(target, x);
+      const newX = e.clientX - rectScene.left;   // centre du point sous la souris
+      setX(target, newX);
       updateGeometry();
     }
 
@@ -255,8 +244,8 @@
       window.removeEventListener("mouseup", onMouseUp);
     }
 
-    pointLeft.addEventListener("mousedown", e => onMouseDown(e, "left"));
-    pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
+    pointLeft.addEventListener("mousedown", e => { e.preventDefault(); onMouseDown(e, "left"); });
+    pointRight.addEventListener("mousedown", e => { e.preventDefault(); onMouseDown(e, "right"); });
 
     function initPositions() {
       const mid = scene.clientWidth / 2;
