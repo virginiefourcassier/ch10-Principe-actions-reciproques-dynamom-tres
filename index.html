@@ -33,14 +33,14 @@
       pointer-events: none;
     }
     #handLeft {
-      left: -10px;       /* bien collée au bord gauche */
+      left: -10px;
       transform: scaleX(-1);
     }
     #handRight {
-      right: -10px;      /* bien collée au bord droit */
+      right: -10px;
     }
 
-    /* Tige commune (barre grise centrale) */
+    /* Barre commune */
     .bar {
       position: absolute;
       top: 165px;
@@ -51,7 +51,7 @@
       border-radius: 8px;
     }
 
-    /* Crochets centraux */
+    /* Crochets */
     .hook {
       position: absolute;
       top: 157px;
@@ -65,7 +65,7 @@
     #hookLeft  { left: 260px; }
     #hookRight { right: 260px; }
 
-    /* Points de préhension (rouge / bleu) */
+    /* Points rouge / bleu */
     .dragPoint {
       position: absolute;
       width: 32px;
@@ -88,7 +88,7 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres */
+    /* Fenêtres des dynamomètres (vision d'une valeur) */
     .window {
       position: absolute;
       top: 190px;
@@ -102,26 +102,30 @@
     #windowLeft  { left: 220px; }
     #windowRight { right: 220px; }
 
-    /* Bande graduée PNG 0–40 N verticale qui coulisse */
+    /* Bande horizontale 0–40 N qui coulisse */
     .tape {
       position: absolute;
-      left: 0;
       top: 0;
-      width: 80px;   /* largeur de bande_dynamometre_0_40.png */
-      height: 480px; /* hauteur de l'image */
-      background: url("bande_dynamometre_0_40.png") no-repeat top left;
-      background-size: 80px 480px;
-      transition: top 0.08s linear;
+      left: 0;
+      width: 1000px;  /* largeur de l'image bande_dynamometre_0_40_h.jpg */
+      height: 40px;   /* hauteur de l'image */
+      background: url("bande_dynamometre_0_40_h.jpg") no-repeat left center;
+      background-size: 1000px 40px;
+      transition: left 0.08s linear;
     }
 
-    #info {
-      margin-top: 6px;
+    #controls {
+      margin-top: 8px;
+    }
+
+    #resetBtn {
+      padding: 4px 10px;
       font-size: 14px;
-      min-height: 1.2em;
+      cursor: pointer;
     }
 
     #signature {
-      margin-top: 2px;
+      margin-top: 4px;
       font-size: 12px;
       color: #777;
     }
@@ -133,17 +137,17 @@
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
-    <!-- Barre centrale (tige commune) -->
+    <!-- Barre centrale -->
     <div class="bar"></div>
 
-    <!-- Crochets + points de préhension -->
+    <!-- Crochets + points -->
     <div id="hookLeft"  class="hook"></div>
     <div id="hookRight" class="hook"></div>
 
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
-    <!-- Fenêtres & bandes graduées -->
+    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -152,22 +156,26 @@
     </div>
   </div>
 
-  <div id="info"></div>
+  <div id="controls">
+    <button id="resetBtn">Réinitialiser</button>
+  </div>
+
   <div id="signature">
     Animation adaptée et codée par Virginie Fourcassier – Lycée Pierre de Fermat – Toulouse.
   </div>
 
   <script>
     // Paramètres "physiques" simplifiés
-    const F0 = 10;     // force de base (N)
-    const k  = 0.05;   // raideur fictive (N / pixel)
-    const L0 = 260;    // longueur au repos entre les points rouge/bleu (px)
+    const F0 = 10;     // N
+    const k  = 0.05;   // N / pixel
+    const L0 = 260;    // px
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
     const pointRight = document.getElementById("pointRight");
     const tapeLeft   = document.getElementById("tapeLeft");
     const tapeRight  = document.getElementById("tapeRight");
+    const resetBtn   = document.getElementById("resetBtn");
 
     let dragging = null;
     let offsetX  = 0;
@@ -178,10 +186,9 @@
       return rect.left + rect.width / 2 - rectScene.left;
     }
 
-    // Zone de déplacement élargie pour permettre plusieurs positions
     function setX(elem, x) {
-      const min = 180;                       // plus près de la main gauche
-      const max = scene.clientWidth - 180;   // plus près de la main droite
+      const min = 180;
+      const max = scene.clientWidth - 180;
       const clamped = Math.max(min, Math.min(max, x));
       elem.style.left = clamped + "px";
     }
@@ -205,25 +212,28 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Force "continue" à partir de la distance
+      // Force continue
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
       const F         = F0 + k * extension;
 
-      // Limitation et quantification
+      // Limitation + quantification
       const Fclamped  = Math.max(0, Math.min(40, F));
       const Fdiscrete = quantizeForce(Fclamped); // 0,10,20,30,40
 
-      // Défilement de la bande : 5 segments égaux (0,10,20,30,40) sur 480 px
-      const segmentHeight = 96;      // 480 / 5
-      const visibleHeight = 40;      // hauteur de la fenêtre
-      const baseOffset    = (segmentHeight - visibleHeight) / 2;
+      // Bande horizontale :
+      // image 1000 px de large, 5 cases égales -> 200 px par valeur
+      // fenêtre 80 px de large, on centre chaque case dans la fenêtre.
+      const segmentWidth  = 200;
+      const windowWidth   = 80;
+      const baseOffset    = (segmentWidth - windowWidth) / 2;
 
-      const index = Fdiscrete / 10;  // 0,1,2,3,4
-      const shift = index * segmentHeight + baseOffset;
+      const index = Fdiscrete / 10;  // 0..4
+      const shift = index * segmentWidth + baseOffset;
 
-      tapeLeft.style.top  = -shift + "px";
-      tapeRight.style.top = -shift + "px";
+      // 0 N -> fenêtre sur la première case (0), 40 N -> dernière case.
+      tapeLeft.style.left  = -shift + "px";
+      tapeRight.style.left = -shift + "px";
     }
 
     function onMouseDown(e, which) {
@@ -260,6 +270,8 @@
       setX(pointRight, mid + L0 / 2);
       updateGeometry();
     }
+
+    resetBtn.addEventListener("click", initPositions);
 
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
