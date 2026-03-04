@@ -32,12 +32,13 @@
       height: 160px;
       pointer-events: none;
     }
+    /* main gauche : image déjà orientée correctement, on ne la retourne pas */
     #handLeft {
-      left: -10px;
-      transform: scaleX(-1);
+      left: 20px;       /* bien visible à gauche dans le cadre */
     }
+    /* main droite à droite du cadre */
     #handRight {
-      right: -10px;
+      right: 20px;
     }
 
     /* Barre commune */
@@ -88,7 +89,7 @@
       transform: translate(50%, -50%);
     }
 
-    /* Fenêtres des dynamomètres (vision d'une valeur) */
+    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 190px;
@@ -107,8 +108,8 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 1000px;  /* largeur de l'image bande_dynamometre_0_40_h.jpg */
-      height: 40px;   /* hauteur de l'image */
+      width: 1000px;  /* largeur supposée de bande_dynamometre_0_40_h.jpg */
+      height: 40px;
       background: url("bande_dynamometre_0_40_h.jpg") no-repeat left center;
       background-size: 1000px 40px;
       transition: left 0.08s linear;
@@ -133,7 +134,7 @@
 </head>
 <body>
   <div id="scene">
-    <!-- Mains -->
+    <!-- Mains (gauche et droite) -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.jpg" alt="">
 
@@ -165,10 +166,9 @@
   </div>
 
   <script>
-    // Paramètres "physiques" simplifiés
-    const F0 = 10;     // N
-    const k  = 0.05;   // N / pixel
-    const L0 = 260;    // px
+    const F0 = 10;   // N
+    const k  = 0.05; // N / pixel
+    const L0 = 260;  // px
 
     const scene      = document.getElementById("scene");
     const pointLeft  = document.getElementById("pointLeft");
@@ -193,7 +193,6 @@
       elem.style.left = clamped + "px";
     }
 
-    // Quantification sur {0,10,20,30,40}
     function quantizeForce(F) {
       const values = [0, 10, 20, 30, 40];
       let best = values[0];
@@ -212,26 +211,21 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // Force continue
       const distance  = Math.abs(xR - xL);
       const extension = Math.max(0, distance - L0);
       const F         = F0 + k * extension;
 
-      // Limitation + quantification
       const Fclamped  = Math.max(0, Math.min(40, F));
-      const Fdiscrete = quantizeForce(Fclamped); // 0,10,20,30,40
+      const Fdiscrete = quantizeForce(Fclamped);
 
-      // Bande horizontale :
-      // image 1000 px de large, 5 cases égales -> 200 px par valeur
-      // fenêtre 80 px de large, on centre chaque case dans la fenêtre.
-      const segmentWidth  = 200;
-      const windowWidth   = 80;
-      const baseOffset    = (segmentWidth - windowWidth) / 2;
+      // Image 1000 px large, 5 cases -> 200 px par case
+      const segmentWidth = 200;
+      const windowWidth  = 80;
+      const baseOffset   = (segmentWidth - windowWidth) / 2;
 
-      const index = Fdiscrete / 10;  // 0..4
+      const index = Fdiscrete / 10; // 0..4
       const shift = index * segmentWidth + baseOffset;
 
-      // 0 N -> fenêtre sur la première case (0), 40 N -> dernière case.
       tapeLeft.style.left  = -shift + "px";
       tapeRight.style.left = -shift + "px";
     }
