@@ -1,147 +1,307 @@
-<script>
-  const F0 = 0;
-  const k  = 0.04;
-  const L0 = 260;
-  const DYN_WIDTH = 260;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>3ᵉ loi de Newton - Dynamomètres</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+      user-select: none;
+    }
 
-  const scene       = document.getElementById("scene");
-  const pointLeft   = document.getElementById("pointLeft");
-  const pointRight  = document.getElementById("pointRight");
-  const dynamoLeft  = document.getElementById("dynamoLeft");
-  const dynamoRight = document.getElementById("dynamoRight");
-  const crochet     = document.getElementById("crochet");
-  const windowLeft  = document.getElementById("windowLeft");
-  const windowRight = document.getElementById("windowRight");
-  const tapeLeft    = document.getElementById("tapeLeft");
-  const tapeRight   = document.getElementById("tapeRight");
-  const resetBtn    = document.getElementById("resetBtn");
+    #scene {
+      position: relative;
+      width: 900px;
+      height: 350px;
+      background: white;
+      border: 1px solid #ccc;
+      overflow: hidden;
+    }
 
-  let dragging = null;
+    /* Mains */
+    .hand {
+      position: absolute;
+      height: 160px;
+      pointer-events: none;
+    }
+    /* on ne bouge plus la main gauche */
+    #handLeft  { left: 20px; top: 110px; }
+    #handRight { right: 20px; top: 95px; }
 
-  function getX(elem) {
-    const rectScene = scene.getBoundingClientRect();
-    const rect      = elem.getBoundingClientRect();
-    return rect.left + rect.width / 2 - rectScene.left;
-  }
+    /* Dynamomètres */
+    .dynamo {
+      position: absolute;
+      top: 150px;
+      height: 60px;
+      object-fit: contain;
+      pointer-events: none;
+    }
 
-  function setPointXLeft(x) {
-    const min = 120;
-    const max = scene.clientWidth / 2;
-    const clamped = Math.max(min, Math.min(max, x));
-    pointLeft.style.left = clamped + "px";
-  }
+    /* Crochet central */
+    #crochet {
+      position: absolute;
+      top: 168px;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
 
-  function setPointXRight(x) {
-    const min = scene.clientWidth / 2;
-    const max = scene.clientWidth - 120;
-    const clamped = Math.max(min, Math.min(max, x));
-    pointRight.style.left = clamped + "px";
-  }
+    /* Points rouge / bleu */
+    .dragPoint {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #333;
+      box-sizing: border-box;
+    }
+    #pointLeft {
+      background: red;
+      top: 180px;
+      transform: translate(-50%, -50%);
+    }
+    #pointRight {
+      background: blue;
+      top: 180px;
+      transform: translate(50%, -50%);
+    }
 
-  function quantizeForce(F) {
-    const values = [];
-    for (let i = 0; i <= 10; i++) values.push(i);
-    let best = values[0];
-    let bestDiff = Math.abs(F - best);
-    for (let i = 1; i < values.length; i++) {
-      const diff = Math.abs(F - values[i]);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = values[i];
+    /* Fenêtres des dynamomètres */
+    .window {
+      position: absolute;
+      top: 210px;
+      width: 60px;
+      height: 40px;
+      overflow: hidden;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: white;
+    }
+
+    /* Bande 0–10 N horizontale (622 x 136) */
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 622px;
+      height: 40px;
+      background: url("bande_dynamometre_0_10_h.png") no-repeat left center;
+      background-size: 622px 40px;
+      transition: left 0.08s linear;
+    }
+
+    #controls {
+      margin-top: 8px;
+    }
+    #resetBtn {
+      padding: 4px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #signature {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div id="scene">
+    <!-- Mains -->
+    <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
+    <img id="handRight" class="hand" src="maindroite.png" alt="">
+
+    <!-- Dynamomètres -->
+    <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
+    <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
+
+    <!-- Crochet central -->
+    <img id="crochet" src="crochet.png" alt="">
+
+    <!-- Points de traction -->
+    <div id="pointLeft"  class="dragPoint"></div>
+    <div id="pointRight" class="dragPoint"></div>
+
+    <!-- Fenêtres & bandes -->
+    <div id="windowLeft" class="window">
+      <div id="tapeLeft" class="tape"></div>
+    </div>
+    <div id="windowRight" class="window">
+      <div id="tapeRight" class="tape"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="resetBtn">Réinitialiser</button>
+  </div>
+
+  <div id="signature">
+    Animation adaptée et codée par Virginie Fourcassier – Lycée Pierre de Fermat – Toulouse.
+  </div>
+
+  <script>
+    const F0 = 0;
+    const k  = 0.04;
+    const L0 = 260;
+    const DYN_WIDTH = 260;   // longueur visible utilisée pour le calcul du décalage
+
+    const scene       = document.getElementById("scene");
+    const pointLeft   = document.getElementById("pointLeft");
+    const pointRight  = document.getElementById("pointRight");
+    const dynamoLeft  = document.getElementById("dynamoLeft");
+    const dynamoRight = document.getElementById("dynamoRight");
+    const crochet     = document.getElementById("crochet");
+    const windowLeft  = document.getElementById("windowLeft");
+    const windowRight = document.getElementById("windowRight");
+    const tapeLeft    = document.getElementById("tapeLeft");
+    const tapeRight   = document.getElementById("tapeRight");
+    const resetBtn    = document.getElementById("resetBtn");
+
+    let dragging = null;
+
+    function getX(elem) {
+      const rectScene = scene.getBoundingClientRect();
+      const rect      = elem.getBoundingClientRect();
+      return rect.left + rect.width / 2 - rectScene.left;
+    }
+
+    function setPointXLeft(x) {
+      const min = 120;
+      const max = scene.clientWidth / 2;
+      const clamped = Math.max(min, Math.min(max, x));
+      pointLeft.style.left = clamped + "px";
+    }
+
+    function setPointXRight(x) {
+      const min = scene.clientWidth / 2;
+      const max = scene.clientWidth - 120;
+      const clamped = Math.max(min, Math.min(max, x));
+      pointRight.style.left = clamped + "px";
+    }
+
+    function quantizeForce(F) {
+      const values = [];
+      for (let i = 0; i <= 10; i++) values.push(i);
+      let best = values[0];
+      let bestDiff = Math.abs(F - best);
+      for (let i = 1; i < values.length; i++) {
+        const diff = Math.abs(F - values[i]);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          best = values[i];
+        }
       }
+      return best;
     }
-    return best;
-  }
 
-  function updateDynamometersAndCrochet() {
-    const xL = getX(pointLeft);
-    const xR = getX(pointRight);
+    function updateDynamometersAndCrochet() {
+      const xL = getX(pointLeft);
+      const xR = getX(pointRight);
 
-    dynamoLeft.style.left  = (xL - 5) + "px";
-    dynamoLeft.style.width = DYN_WIDTH + "px";
+      // dynamomètre gauche, lié au point rouge
+      dynamoLeft.style.left  = (xL - 5) + "px";
+      dynamoLeft.style.width = DYN_WIDTH + "px";
 
-    dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
-    dynamoRight.style.width = DYN_WIDTH + "px";
+      // dynamomètre droit, lié au point bleu
+      dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
+      dynamoRight.style.width = DYN_WIDTH + "px";
 
-    const innerLeftEnd  = xL + (DYN_WIDTH - 10);
-    const innerRightEnd = xR - (DYN_WIDTH - 10);
-    const cx = (innerLeftEnd + innerRightEnd) / 2;
-    crochet.style.left = cx + "px";
+      // crochet central entre les extrémités internes
+      const innerLeftEnd  = xL + (DYN_WIDTH - 10);
+      const innerRightEnd = xR - (DYN_WIDTH - 10);
+      const cx = (innerLeftEnd + innerRightEnd) / 2;
+      crochet.style.left = cx + "px";
 
-    windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
-    windowLeft.style.transform = "translateX(-50%)";
+      // fenêtres centrées sur les corps
+      windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
+      windowLeft.style.transform = "translateX(-50%)";
 
-    windowRight.style.left = (xR - DYN_WIDTH / 2) + "px";
-    windowRight.style.transform = "translateX(-50%)";
-  }
-
-  function updateForceAndTapes() {
-    const xL = getX(pointLeft);
-    const xR = getX(pointRight);
-
-    const distance  = Math.abs(xR - xL);
-    const extension = Math.max(0, distance - L0);
-    const F         = F0 + k * extension;
-
-    const Fclamped  = Math.max(0, Math.min(10, F));
-    const Fdiscrete = quantizeForce(Fclamped);
-
-    const tapeWidth    = 622;
-    const nbValues     = 11;
-    const segmentWidth = tapeWidth / nbValues;
-    const windowWidth  = 60;
-    const baseOffset   = (segmentWidth - windowWidth) / 2;
-
-    const index = Fdiscrete;
-    const shift = index * segmentWidth + baseOffset;
-
-    tapeLeft.style.left  = -shift + "px";
-    tapeRight.style.left = -shift + "px";
-  }
-
-  function updateAll() {
-    updateDynamometersAndCrochet();
-    updateForceAndTapes();
-  }
-
-  function onMouseDown(e, which) {
-    dragging = which;
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    e.preventDefault();
-  }
-
-  function onMouseMove(e) {
-    if (!dragging) return;
-    const rectScene = scene.getBoundingClientRect();
-    const x = e.clientX - rectScene.left;
-    if (dragging === "left") {
-      setPointXLeft(x);
-    } else {
-      setPointXRight(x);
+      windowRight.style.left = (xR - DYN_WIDTH / 2) + "px";
+      windowRight.style.transform = "translateX(-50%)";
     }
-    updateAll();
-  }
 
-  function onMouseUp() {
-    dragging = null;
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
-  }
+    function updateForceAndTapes() {
+      const xL = getX(pointLeft);
+      const xR = getX(pointRight);
 
-  pointLeft.addEventListener("mousedown", e => onMouseDown(e, "left"));
-  pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
+      const distance  = Math.abs(xR - xL);
+      const extension = Math.max(0, distance - L0);
+      const F         = F0 + k * extension;
 
-  function initPositions() {
-    // ancien xL ≈ 320, on décale de 0.6 * DYN_WIDTH = 156 px vers la gauche
-    const xL = 320 - 0.6 * DYN_WIDTH;   // ≈ 164 px
-    const xR = xL + L0;
-    pointLeft.style.left  = xL + "px";
-    pointRight.style.left = xR + "px";
-    updateAll();
-  }
+      const Fclamped  = Math.max(0, Math.min(10, F));
+      const Fdiscrete = quantizeForce(Fclamped);
 
-  resetBtn.addEventListener("click", initPositions);
-  window.addEventListener("load", initPositions);
-  window.addEventListener("resize", initPositions);
-</script>
+      const tapeWidth    = 622;
+      const nbValues     = 11;
+      const segmentWidth = tapeWidth / nbValues;
+      const windowWidth  = 60;
+      const baseOffset   = (segmentWidth - windowWidth) / 2;
+
+      const index = Fdiscrete;
+      const shift = index * segmentWidth + baseOffset;
+
+      tapeLeft.style.left  = -shift + "px";
+      tapeRight.style.left = -shift + "px";
+    }
+
+    function updateAll() {
+      updateDynamometersAndCrochet();
+      updateForceAndTapes();
+    }
+
+    function onMouseDown(e, which) {
+      dragging = which;
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+      if (!dragging) return;
+      const rectScene = scene.getBoundingClientRect();
+      const x = e.clientX - rectScene.left;
+      if (dragging === "left") {
+        setPointXLeft(x);
+      } else {
+        setPointXRight(x);
+      }
+      updateAll();
+    }
+
+    function onMouseUp() {
+      dragging = null;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    }
+
+    pointLeft.addEventListener("mousedown", e => onMouseDown(e, "left"));
+    pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
+
+    function initPositions() {
+      // Position de référence précédente ~320 px
+      const baseXL = 320;
+      const decal  = 0.6 * DYN_WIDTH;     // déplacement vers la gauche
+      const xL = baseXL - decal;          // ≈ 164 px
+      const xR = xL + L0;
+
+      pointLeft.style.left  = xL + "px";
+      pointRight.style.left = xR + "px";
+      updateAll();
+    }
+
+    resetBtn.addEventListener("click", initPositions);
+    window.addEventListener("load", initPositions);
+    window.addEventListener("resize", initPositions);
+  </script>
+</body>
+</html>
