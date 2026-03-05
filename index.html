@@ -31,9 +31,7 @@
       height: 160px;
       pointer-events: none;
     }
-    /* 1) descendre un peu la main gauche, 2) décaler vers la droite */
     #handLeft  { left: 40px; top: 120px; }
-    /* 4) main droite à la même hauteur que la main gauche */
     #handRight { right: 40px; top: 120px; }
 
     /* Dynamomètres */
@@ -154,7 +152,7 @@
     const F0 = 0;
     const k  = 0.04;
     const L0 = 260;
-    const DYN_WIDTH = 260;   // longueur visible utilisée
+    const DYN_WIDTH = 260;
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -285,14 +283,10 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // point rouge : base 320, décalé de 0.6 * DYN_WIDTH vers la gauche
       const baseXL = 320;
-      const decal  = 0.6 * DYN_WIDTH;   // 0,6 longueur du dynamomètre
-      const xL = baseXL - decal;        // ≈ 164 px
-
-      // 3) décaler le point bleu + dynamomètre droit d'une longueur de dynamomètre vers la droite
-      const xR = xL + L0 + DYN_WIDTH;   // L0 + une longueur de dynamomètre
-
+      const decal  = 0.6 * DYN_WIDTH;
+      const xL = baseXL - decal;
+      const xR = xL + L0 + DYN_WIDTH;
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
       updateAll();
@@ -301,20 +295,15 @@
     resetBtn.addEventListener("click", initPositions);
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
+
+    /* --------- Clic pour afficher les coordonnées --------- */
+    scene.addEventListener('click', function (e) {
+      const rect = scene.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      console.log('CLICK scène : x = ' + x + ', y = ' + y);
+    });
+    /* ------------------------------------------------------- */
   </script>
-  <script>
-  const scene = document.getElementById('scene');
-
-  scene.addEventListener('click', function (e) {
-    const rect = scene.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    console.log('click sur la scène : x = ' + x + ', y = ' + y);
-    // Si tu veux aussi une fenêtre :
-    alert('click : x = ' + x + ', y = ' + y);
-  });
-</script>
-
 </body>
 </html>
