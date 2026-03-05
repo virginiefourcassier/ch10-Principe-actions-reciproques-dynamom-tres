@@ -224,7 +224,7 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // chevauchement léger sur le côté central :
+      // chevauchement léger sur le côté central
       dynamoLeft.style.left  = (xL - 5) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
@@ -302,10 +302,9 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      const baseXL = 320;
-      const decal  = 0.6 * DYN_WIDTH;
-      const xL = baseXL - decal;
-      const xR = xL + L0 + DYN_WIDTH;
+      // on place les points pour que les côtés intérieurs soient centrés à x = 450
+      const xL = 200; // bord intérieur droit du dynamo gauche à 450
+      const xR = 700; // bord intérieur gauche du dynamo droit à 450
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
@@ -319,7 +318,7 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
-    // Debug F12 : coordonnées du clic + positions des images
+    // Debug : coordonnées du clic + positions des images
     scene.addEventListener('click', function (e) {
       const rectScene = scene.getBoundingClientRect();
       const x = e.clientX - rectScene.left;
