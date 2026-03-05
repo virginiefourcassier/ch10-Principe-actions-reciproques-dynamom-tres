@@ -30,6 +30,9 @@
       height: 160px;
       pointer-events: none;
     }
+    /* reprends les positions que tu avais trouvées correctes */
+    #handLeft  { left: 40px; top: 120px; }
+    #handRight { right: 40px; top: 120px; }
 
     .dynamo {
       position: absolute;
@@ -101,17 +104,22 @@
 </head>
 <body>
   <div id="scene">
+    <!-- Mains -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.png" alt="">
 
+    <!-- Dynamomètres -->
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
+    <!-- Crochet central -->
     <img id="crochet" src="crochet.png" alt="">
 
+    <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
+    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -134,7 +142,7 @@
     const L0 = 260;
     const DYN_WIDTH = 260;
 
-    // offsets mains/points à garder si tu les avais déjà
+    // offsets main/point (que tu avais déjà calibrés)
     const LEFT_HAND_OFFSET_X  = -9;
     const LEFT_HAND_OFFSET_Y  =  3;
     const RIGHT_HAND_OFFSET_X = 41;
@@ -295,14 +303,14 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // 1. On place directement les points sur les centres que tu as mesurés
-      const xL = 413;   // centre du crochet du dynamo gauche
-      const xR = 460;   // centre de l’anneau du dynamo droit
+      // On place les points exactement sur les centres que tu as mesurés
+      const xL = 413.1111068725586;  // intérieur crochet dynamo gauche
+      const xR = 460.0;              // intérieur anneau dynamo droit
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
 
-      // même hauteur pour les deux points
+      // même hauteur pour les deux (CSS met déjà 180px, on synchronise au cas où)
       pointRight.style.top = pointLeft.style.top;
 
       updateAll();
@@ -312,6 +320,7 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
+    // clic debug coordonnées
     scene.addEventListener('click', function (e) {
       const rect = scene.getBoundingClientRect();
       const x = e.clientX - rect.left;
