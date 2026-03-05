@@ -39,16 +39,6 @@
       pointer-events: none;
     }
 
-    #crochet {
-      position: absolute;
-      left: 436.45454597473145px;
-      top: 180.25852966308594px;
-      width: 28px;
-      height: 28px;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-    }
-
     .dragPoint {
       position: absolute;
       width: 24px;
@@ -110,9 +100,6 @@
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
-    <!-- Crochet central -->
-    <img id="crochet" src="crochet.png" alt="">
-
     <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
@@ -139,10 +126,11 @@
     const k  = 0.04;
     const L0 = 260;
     const DYN_WIDTH = 260;
+    const OVERLAP = 10; // chevauchement total au centre (px), > 5 pour bien voir
 
     // Offsets entre centre du point et centre de l’anneau des mains
     const LEFT_HAND_OFFSET_X  = -9;
-    const LEFT_HAND_OFFSET_Y  = 15; // mains descendues de 12 px
+    const LEFT_HAND_OFFSET_Y  = 15;
     const RIGHT_HAND_OFFSET_X = 41;
     const RIGHT_HAND_OFFSET_Y = 16;
 
@@ -153,7 +141,6 @@
     const handRight   = document.getElementById("handRight");
     const dynamoLeft  = document.getElementById("dynamoLeft");
     const dynamoRight = document.getElementById("dynamoRight");
-    const crochet     = document.getElementById("crochet");
     const windowLeft  = document.getElementById("windowLeft");
     const windowRight = document.getElementById("windowRight");
     const tapeLeft    = document.getElementById("tapeLeft");
@@ -175,13 +162,13 @@
 
     function setPointXLeft(x) {
       const min = 120;
-      const max = scene.clientWidth / 2;
+      const max = scene.clientWidth / 2 - 20; // garde un peu de marge
       const clamped = Math.max(min, Math.min(max, x));
       pointLeft.style.left = clamped + "px";
     }
 
     function setPointXRight(x) {
-      const min = scene.clientWidth / 2;
+      const min = scene.clientWidth / 2 + 20;
       const max = scene.clientWidth - 120;
       const clamped = Math.max(min, Math.min(max, x));
       pointRight.style.left = clamped + "px";
@@ -220,20 +207,32 @@
       handRight.style.top  = (yPoint + RIGHT_HAND_OFFSET_Y - handCenterOffsetYR) + "px";
     }
 
-    function updateDynamometersAndCrochet() {
-      const xL = getX(pointLeft);
-      const xR = getX(pointRight);
+    function updateDynamometers() {
+      const centerX = scene.clientWidth / 2;
+      const halfOverlap = OVERLAP / 2;
 
-      dynamoLeft.style.left  = (xL - 5) + "px";
+      // Bord intérieur droit du gauche : centerX + halfOverlap
+      const innerRightLeft = centerX + halfOverlap;
+      // Bord intérieur gauche du droit : centerX - halfOverlap
+      const innerLeftRight = centerX - halfOverlap;
+
+      // On suppose que l’image de chaque dynamomètre est dessinée pour que
+      // le bord intérieur soit à 10 px du bord de l’image (comme dans ton code précédent).
+      const hookOffset = 10;
+
+      // dynamomètre gauche
+      // son bord intérieur droit est à left + (DYN_WIDTH - hookOffset)
+      dynamoLeft.style.left  = (innerRightLeft - (DYN_WIDTH - hookOffset)) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
-      dynamoRight.style.left  = (xR - DYN_WIDTH + 5) + "px";
+      // dynamomètre droit
+      // son bord intérieur gauche est à left + hookOffset
+      dynamoRight.style.left  = (innerLeftRight - hookOffset) + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      const innerLeftEnd  = xL + (DYN_WIDTH - 10);
-      const innerRightEnd = xR - (DYN_WIDTH - 10);
-      const cx = (innerLeftEnd + innerRightEnd) / 2;
-      crochet.style.left = cx + "px";
+      // Fenêtres centrées sur le milieu de chaque corps
+      const xL = getX(pointLeft);
+      const xR = getX(pointRight);
 
       windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
       windowLeft.style.transform = "translateX(-50%)";
@@ -267,7 +266,7 @@
     }
 
     function updateAll() {
-      updateDynamometersAndCrochet();
+      updateDynamometers();
       updateHands();
       updateForceAndTapes();
     }
@@ -301,8 +300,11 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      const xL = 224.45454597473145;
-      const xR = 730.4545459747314;
+      // on place les points de façon à avoir distance ≈ L0 (force = 0)
+      const centerX = scene.clientWidth / 2;
+      const halfDistance = L0 / 2;
+      const xL = centerX - halfDistance;
+      const xR = centerX + halfDistance;
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
@@ -316,11 +318,24 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
+    // Debug : coordonnées du clic + positions des images
     scene.addEventListener('click', function (e) {
-      const rect = scene.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const rectScene = scene.getBoundingClientRect();
+      const x = e.clientX - rectScene.left;
+      const y = e.clientY - rectScene.top;
       console.log('CLICK scène : x = ' + x + ', y = ' + y);
+
+      const imgs = scene.querySelectorAll('img');
+      imgs.forEach(img => {
+        const r = img.getBoundingClientRect();
+        const leftInScene = r.left - rectScene.left;
+        const topInScene  = r.top  - rectScene.top;
+        console.log(
+          (img.id || img.src),
+          'left =', leftInScene,
+          'top =', topInScene
+        );
+      });
     });
   </script>
 </body>
