@@ -127,7 +127,7 @@
     const k         = 0.04;
     const L0        = 260;   // distance "repos" entre les points rouge et bleu (force = 0)
     const DYN_WIDTH = 260;   // largeur logique des images de dynamomètre
-    const OVERLAP   = 3;     // chevauchement total au centre (px) -> dynamomètres un peu plus écartés
+    const OVERLAP   = 3;     // chevauchement total au centre (px)
     const HOOK_OFFSET = 10;  // crochet (unique) à 10 px du bord image côté centre
 
     // Offsets entre centre du point et centre de l’anneau des mains
@@ -231,11 +231,15 @@
 
       // Points de traction sur les extrémités extérieures
       const outerOffsetLeft = HOOK_OFFSET;
-      const pointLeftX = dynLeftLeft + outerOffsetLeft;
+      let pointLeftX = dynLeftLeft + outerOffsetLeft;
+      // décalage supplémentaire : 5 px vers la gauche
+      pointLeftX -= 5;
       pointLeft.style.left = pointLeftX + "px";
 
       const outerOffsetRight = HOOK_OFFSET;
-      const pointRightX = dynRightLeft + DYN_WIDTH - outerOffsetRight;
+      let pointRightX = dynRightLeft + DYN_WIDTH - outerOffsetRight;
+      // décalage supplémentaire : 3 px vers la droite
+      pointRightX += 3;
       pointRight.style.left = pointRightX + "px";
 
       // Fenêtres centrées sur les corps
