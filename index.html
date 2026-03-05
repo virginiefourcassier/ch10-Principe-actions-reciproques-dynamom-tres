@@ -100,7 +100,7 @@
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
-    <!-- Points de traction -->
+    <!-- Points de traction (poignées) -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
@@ -122,14 +122,16 @@
   </div>
 
   <script>
-    const F0 = 0;
-    const k  = 0.04;
-    const L0 = 260;
-    const DYN_WIDTH = 260;
-    const OVERLAP = 10; // chevauchement total au centre (px), > 5 pour bien voir
+    // Constantes physiques / géométriques
+    const F0       = 0;
+    const k        = 0.04;
+    const L0       = 260;   // distance "repos" entre les points rouge et bleu (force = 0)
+    const DYN_WIDTH = 260;  // largeur logique des images de dynamomètre
+    const OVERLAP   = 8;    // chevauchement total au centre (en px, assez visible)
+    const HOOK_OFFSET = 10; // crochet (unique) à 10 px du bord image côté centre
 
     // Offsets entre centre du point et centre de l’anneau des mains
-    const LEFT_HAND_OFFSET_X  = -9;
+    const LEFT_HAND_OFFSET_X  = -9 - 1.3 * DYN_WIDTH / 9; // correction que tu as demandée
     const LEFT_HAND_OFFSET_Y  = 15;
     const RIGHT_HAND_OFFSET_X = 41;
     const RIGHT_HAND_OFFSET_Y = 16;
@@ -161,15 +163,15 @@
     }
 
     function setPointXLeft(x) {
-      const min = 120;
-      const max = scene.clientWidth / 2 - 20; // garde un peu de marge
+      const min = 60;
+      const max = scene.clientWidth / 2 - 40;
       const clamped = Math.max(min, Math.min(max, x));
       pointLeft.style.left = clamped + "px";
     }
 
     function setPointXRight(x) {
-      const min = scene.clientWidth / 2 + 20;
-      const max = scene.clientWidth - 120;
+      const min = scene.clientWidth / 2 + 40;
+      const max = scene.clientWidth - 60;
       const clamped = Math.max(min, Math.min(max, x));
       pointRight.style.left = clamped + "px";
     }
@@ -207,37 +209,49 @@
       handRight.style.top  = (yPoint + RIGHT_HAND_OFFSET_Y - handCenterOffsetYR) + "px";
     }
 
+    // Met en place les deux dynamomètres autour du centre fixe de la scène
+    // et (très important) recalcule les positions des points rouge/bleu
+    // pour qu’ils soient aux extrémités extérieures.
     function updateDynamometers() {
       const centerX = scene.clientWidth / 2;
       const halfOverlap = OVERLAP / 2;
 
-      // Bord intérieur droit du gauche : centerX + halfOverlap
-      const innerRightLeft = centerX + halfOverlap;
-      // Bord intérieur gauche du droit : centerX - halfOverlap
-      const innerLeftRight = centerX - halfOverlap;
+      // Positions des crochets (uniques) au centre, avec léger chevauchement
+      const hookLeftX  = centerX + halfOverlap; // crochet du dynamomètre gauche
+      const hookRightX = centerX - halfOverlap; // crochet du dynamomètre droit
 
-      // On suppose que l’image de chaque dynamomètre est dessinée pour que
-      // le bord intérieur soit à 10 px du bord de l’image (comme dans ton code précédent).
-      const hookOffset = 10;
-
-      // dynamomètre gauche
-      // son bord intérieur droit est à left + (DYN_WIDTH - hookOffset)
-      dynamoLeft.style.left  = (innerRightLeft - (DYN_WIDTH - hookOffset)) + "px";
+      // Dynamomètre gauche :
+      // crochet = bord droit de l’image - HOOK_OFFSET
+      const dynLeftLeft = hookLeftX - (DYN_WIDTH - HOOK_OFFSET);
+      dynamoLeft.style.left  = dynLeftLeft + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
-      // dynamomètre droit
-      // son bord intérieur gauche est à left + hookOffset
-      dynamoRight.style.left  = (innerLeftRight - hookOffset) + "px";
+      // Dynamomètre droit :
+      // crochet = bord gauche de l’image + HOOK_OFFSET
+      const dynRightLeft = hookRightX - HOOK_OFFSET;
+      dynamoRight.style.left  = dynRightLeft + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      // Fenêtres centrées sur le milieu de chaque corps
-      const xL = getX(pointLeft);
-      const xR = getX(pointRight);
+      // Points de traction sur les extrémités extérieures :
+      // - point rouge : extrémité gauche du dynamomètre gauche
+      //   (on suppose l’anneau main-côté gauche proche du bord gauche de l’image)
+      const outerOffsetLeft = HOOK_OFFSET; // ajustable si besoin après test
+      const pointLeftX = dynLeftLeft + outerOffsetLeft;
+      pointLeft.style.left = pointLeftX + "px";
 
-      windowLeft.style.left  = (xL + DYN_WIDTH / 2) + "px";
+      // - point bleu : extrémité droite du dynamomètre droit
+      const outerOffsetRight = HOOK_OFFSET; // symétrique
+      const pointRightX = dynRightLeft + DYN_WIDTH - outerOffsetRight;
+      pointRight.style.left = pointRightX + "px";
+
+      // Fenêtres centrées sur les corps des dynamomètres
+      const xLcenter = dynLeftLeft + DYN_WIDTH / 2;
+      const xRcenter = dynRightLeft + DYN_WIDTH / 2;
+
+      windowLeft.style.left  = xLcenter + "px";
       windowLeft.style.transform = "translateX(-50%)";
 
-      windowRight.style.left = (xR - DYN_WIDTH / 2) + "px";
+      windowRight.style.left = xRcenter + "px";
       windowRight.style.transform = "translateX(-50%)";
     }
 
@@ -261,7 +275,7 @@
       const index = Fdiscrete;
       const shift = index * segmentWidth + baseOffset;
 
-      tapeLeft.style.left  = -shift + "px";
+      tapeLeft .style.left = -shift + "px";
       tapeRight.style.left = -shift + "px";
     }
 
@@ -282,6 +296,9 @@
       if (!dragging) return;
       const rectScene = scene.getBoundingClientRect();
       const x = e.clientX - rectScene.left;
+
+      // On déplace d’abord le point souhaité,
+      // puis updateAll remet dynamos/mains cohérents
       if (dragging === "left") {
         setPointXLeft(x);
       } else {
@@ -300,7 +317,7 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // on place les points de façon à avoir distance ≈ L0 (force = 0)
+      // On place les points pour que distance ≈ L0 (force = 0)
       const centerX = scene.clientWidth / 2;
       const halfDistance = L0 / 2;
       const xL = centerX - halfDistance;
