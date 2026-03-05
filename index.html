@@ -56,7 +56,7 @@
       cursor: pointer;
       border: 2px solid #333;
       box-sizing: border-box;
-      top: 180px;
+      top: 180px;                   /* 3. alignement vertical commun */
     }
     #pointLeft  { background: red;  transform: translate(-50%, -50%); }
     #pointRight { background: blue; transform: translate( 50%, -50%); }
@@ -101,17 +101,22 @@
 </head>
 <body>
   <div id="scene">
+    <!-- Mains -->
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.png" alt="">
 
+    <!-- Dynamomètres -->
     <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
     <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
 
+    <!-- Crochet central -->
     <img id="crochet" src="crochet.png" alt="">
 
+    <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
+    <!-- Fenêtres & bandes -->
     <div id="windowLeft" class="window">
       <div id="tapeLeft" class="tape"></div>
     </div>
@@ -134,11 +139,11 @@
     const L0 = 260;
     const DYN_WIDTH = 260;
 
-    // offsets mains/points à garder si tu les avais déjà
-    const LEFT_HAND_OFFSET_X  = -9;
+    // Offsets entre centre du point et centre de l’anneau des mains (mesurés)
+    const LEFT_HAND_OFFSET_X  = -9;   // centre main gauche = centre point + (-9, +3)
     const LEFT_HAND_OFFSET_Y  =  3;
-    const RIGHT_HAND_OFFSET_X = 41;
-    const RIGHT_HAND_OFFSET_Y = 4;
+    const RIGHT_HAND_OFFSET_X =  41;  // centre main droite = centre point + (+41, +4)
+    const RIGHT_HAND_OFFSET_Y =  4;
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -197,15 +202,19 @@
     }
 
     function updateHands() {
+      // centre commun des points (même y pour les deux)
       const yPoint = getY(pointLeft);
 
+      // gauche
       const xL = getX(pointLeft);
       const handRectL = handLeft.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
       const handCenterOffsetXL = handRectL.width  / 2;
       const handCenterOffsetYL = handRectL.height / 2;
       handLeft.style.left = (xL + LEFT_HAND_OFFSET_X - handCenterOffsetXL) + "px";
       handLeft.style.top  = (yPoint + LEFT_HAND_OFFSET_Y - handCenterOffsetYL) + "px";
 
+      // droite
       const xR = getX(pointRight);
       const handRectR = handRight.getBoundingClientRect();
       const handCenterOffsetXR = handRectR.width  / 2;
@@ -262,7 +271,7 @@
 
     function updateAll() {
       updateDynamometersAndCrochet();
-      updateHands();
+      updateHands();               // mains solidaires des points
       updateForceAndTapes();
     }
 
@@ -295,14 +304,16 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // 1. On place directement les points sur les centres que tu as mesurés
-      const xL = 413;   // centre du crochet du dynamo gauche
-      const xR = 460;   // centre de l’anneau du dynamo droit
+      // on garde ton xL initial issu des ajustements précédents
+      const baseXL = 320;
+      const decal  = 0.6 * DYN_WIDTH;
+      const xL = baseXL - decal;
+      const xR = xL + L0 + DYN_WIDTH;
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
 
-      // même hauteur pour les deux points
+      // alignement vertical commun (pointLeft a déjà top:180px en CSS)
       pointRight.style.top = pointLeft.style.top;
 
       updateAll();
@@ -312,6 +323,7 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
+    // clic debug coordonnées
     scene.addEventListener('click', function (e) {
       const rect = scene.getBoundingClientRect();
       const x = e.clientX - rect.left;
