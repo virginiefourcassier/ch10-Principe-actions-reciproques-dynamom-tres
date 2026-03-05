@@ -25,16 +25,12 @@
       overflow: hidden;
     }
 
-    /* Mains */
     .hand {
       position: absolute;
       height: 160px;
       pointer-events: none;
     }
-    #handLeft  { left: 40px; top: 120px; }
-    #handRight { right: 40px; top: 120px; }
 
-    /* Dynamomètres */
     .dynamo {
       position: absolute;
       top: 150px;
@@ -43,7 +39,6 @@
       pointer-events: none;
     }
 
-    /* Crochet central */
     #crochet {
       position: absolute;
       top: 168px;
@@ -53,7 +48,6 @@
       pointer-events: none;
     }
 
-    /* Points rouge / bleu */
     .dragPoint {
       position: absolute;
       width: 24px;
@@ -62,19 +56,11 @@
       cursor: pointer;
       border: 2px solid #333;
       box-sizing: border-box;
+      top: 180px;                   /* 3. alignement vertical commun */
     }
-    #pointLeft {
-      background: red;
-      top: 180px;
-      transform: translate(-50%, -50%);
-    }
-    #pointRight {
-      background: blue;
-      top: 180px;
-      transform: translate(50%, -50%);
-    }
+    #pointLeft  { background: red;  transform: translate(-50%, -50%); }
+    #pointRight { background: blue; transform: translate( 50%, -50%); }
 
-    /* Fenêtres des dynamomètres */
     .window {
       position: absolute;
       top: 210px;
@@ -86,7 +72,6 @@
       background: white;
     }
 
-    /* Bande 0–10 N horizontale (622 x 136) */
     .tape {
       position: absolute;
       top: 0;
@@ -154,9 +139,17 @@
     const L0 = 260;
     const DYN_WIDTH = 260;
 
+    // Offsets entre centre du point et centre de l’anneau des mains (mesurés)
+    const LEFT_HAND_OFFSET_X  = -9;   // centre main gauche = centre point + (-9, +3)
+    const LEFT_HAND_OFFSET_Y  =  3;
+    const RIGHT_HAND_OFFSET_X =  41;  // centre main droite = centre point + (+41, +4)
+    const RIGHT_HAND_OFFSET_Y =  4;
+
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
     const pointRight  = document.getElementById("pointRight");
+    const handLeft    = document.getElementById("handLeft");
+    const handRight   = document.getElementById("handRight");
     const dynamoLeft  = document.getElementById("dynamoLeft");
     const dynamoRight = document.getElementById("dynamoRight");
     const crochet     = document.getElementById("crochet");
@@ -172,6 +165,11 @@
       const rectScene = scene.getBoundingClientRect();
       const rect      = elem.getBoundingClientRect();
       return rect.left + rect.width / 2 - rectScene.left;
+    }
+    function getY(elem) {
+      const rectScene = scene.getBoundingClientRect();
+      const rect      = elem.getBoundingClientRect();
+      return rect.top + rect.height / 2 - rectScene.top;
     }
 
     function setPointXLeft(x) {
@@ -201,6 +199,28 @@
         }
       }
       return best;
+    }
+
+    function updateHands() {
+      // centre commun des points (même y pour les deux)
+      const yPoint = getY(pointLeft);
+
+      // gauche
+      const xL = getX(pointLeft);
+      const handRectL = handLeft.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
+      const handCenterOffsetXL = handRectL.width  / 2;
+      const handCenterOffsetYL = handRectL.height / 2;
+      handLeft.style.left = (xL + LEFT_HAND_OFFSET_X - handCenterOffsetXL) + "px";
+      handLeft.style.top  = (yPoint + LEFT_HAND_OFFSET_Y - handCenterOffsetYL) + "px";
+
+      // droite
+      const xR = getX(pointRight);
+      const handRectR = handRight.getBoundingClientRect();
+      const handCenterOffsetXR = handRectR.width  / 2;
+      const handCenterOffsetYR = handRectR.height / 2;
+      handRight.style.left = (xR + RIGHT_HAND_OFFSET_X - handCenterOffsetXR) + "px";
+      handRight.style.top  = (yPoint + RIGHT_HAND_OFFSET_Y - handCenterOffsetYR) + "px";
     }
 
     function updateDynamometersAndCrochet() {
@@ -251,6 +271,7 @@
 
     function updateAll() {
       updateDynamometersAndCrochet();
+      updateHands();               // mains solidaires des points
       updateForceAndTapes();
     }
 
@@ -283,12 +304,18 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
+      // on garde ton xL initial issu des ajustements précédents
       const baseXL = 320;
       const decal  = 0.6 * DYN_WIDTH;
       const xL = baseXL - decal;
       const xR = xL + L0 + DYN_WIDTH;
+
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
+
+      // alignement vertical commun (pointLeft a déjà top:180px en CSS)
+      pointRight.style.top = pointLeft.style.top;
+
       updateAll();
     }
 
@@ -296,14 +323,13 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
-    /* --------- Clic pour afficher les coordonnées --------- */
+    // clic debug coordonnées
     scene.addEventListener('click', function (e) {
       const rect = scene.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       console.log('CLICK scène : x = ' + x + ', y = ' + y);
     });
-    /* ------------------------------------------------------- */
   </script>
 </body>
 </html>
