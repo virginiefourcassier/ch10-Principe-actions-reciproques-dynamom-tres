@@ -302,5 +302,19 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
   </script>
+  <script>
+  const scene = document.getElementById('scene');
+
+  scene.addEventListener('click', function (e) {
+    const rect = scene.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    console.log('click sur la scène : x = ' + x + ', y = ' + y);
+    // Si tu veux aussi une fenêtre :
+    alert('click : x = ' + x + ', y = ' + y);
+  });
+</script>
+
 </body>
 </html>
