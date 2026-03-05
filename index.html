@@ -142,9 +142,9 @@
 
     // Offsets entre centre du point et centre de l’anneau des mains
     const LEFT_HAND_OFFSET_X  = -9;
-    const LEFT_HAND_OFFSET_Y  = 15; // 3 + 12
+    const LEFT_HAND_OFFSET_Y  = 15; // mains descendues de 12 px
     const RIGHT_HAND_OFFSET_X = 41;
-    const RIGHT_HAND_OFFSET_Y = 16; // 4 + 12
+    const RIGHT_HAND_OFFSET_Y = 16;
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -224,6 +224,7 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
+      // chevauchement léger sur le côté central :
       dynamoLeft.style.left  = (xL - 5) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
@@ -318,11 +319,24 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
+    // Debug F12 : coordonnées du clic + positions des images
     scene.addEventListener('click', function (e) {
-      const rect = scene.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const rectScene = scene.getBoundingClientRect();
+      const x = e.clientX - rectScene.left;
+      const y = e.clientY - rectScene.top;
       console.log('CLICK scène : x = ' + x + ', y = ' + y);
+
+      const imgs = scene.querySelectorAll('img');
+      imgs.forEach(img => {
+        const r = img.getBoundingClientRect();
+        const leftInScene = r.left - rectScene.left;
+        const topInScene  = r.top  - rectScene.top;
+        console.log(
+          (img.id || img.src),
+          'left =', leftInScene,
+          'top =', topInScene
+        );
+      });
     });
   </script>
 </body>
