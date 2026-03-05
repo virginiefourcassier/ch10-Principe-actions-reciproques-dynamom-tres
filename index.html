@@ -41,7 +41,8 @@
 
     #crochet {
       position: absolute;
-      top: 168px;
+      left: 436.45454597473145px;
+      top: 180.25852966308594px;
       width: 28px;
       height: 28px;
       transform: translate(-50%, -50%);
@@ -139,11 +140,11 @@
     const L0 = 260;
     const DYN_WIDTH = 260;
 
-    // Offsets entre centre du point et centre de l’anneau des mains (mesurés)
+    // Offsets entre centre du point et centre de l’anneau des mains
     const LEFT_HAND_OFFSET_X  = -9;
-    const LEFT_HAND_OFFSET_Y  =  3;
+    const LEFT_HAND_OFFSET_Y  = 15; // 3 + 12
     const RIGHT_HAND_OFFSET_X = 41;
-    const RIGHT_HAND_OFFSET_Y = 4;
+    const RIGHT_HAND_OFFSET_Y = 16; // 4 + 12
 
     const scene       = document.getElementById("scene");
     const pointLeft   = document.getElementById("pointLeft");
@@ -317,24 +318,11 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
-    // clic debug coordonnées + positions des images
     scene.addEventListener('click', function (e) {
-      const rectScene = scene.getBoundingClientRect();
-      const x = e.clientX - rectScene.left;
-      const y = e.clientY - rectScene.top;
+      const rect = scene.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
       console.log('CLICK scène : x = ' + x + ', y = ' + y);
-
-      const imgs = scene.querySelectorAll('img');
-      imgs.forEach(img => {
-        const r = img.getBoundingClientRect();
-        const leftInScene = r.left - rectScene.left;
-        const topInScene  = r.top  - rectScene.top;
-        console.log(
-          img.id || img.src,
-          'left =', leftInScene,
-          'top =', topInScene
-        );
-      });
     });
   </script>
 </body>
