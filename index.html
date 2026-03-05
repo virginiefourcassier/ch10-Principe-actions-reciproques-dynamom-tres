@@ -123,15 +123,15 @@
 
   <script>
     // Constantes physiques / géométriques
-    const F0       = 0;
-    const k        = 0.04;
-    const L0       = 260;   // distance "repos" entre les points rouge et bleu (force = 0)
-    const DYN_WIDTH = 260;  // largeur logique des images de dynamomètre
-    const OVERLAP   = 8;    // chevauchement total au centre (en px, assez visible)
-    const HOOK_OFFSET = 10; // crochet (unique) à 10 px du bord image côté centre
+    const F0        = 0;
+    const k         = 0.04;
+    const L0        = 260;   // distance "repos" entre les points rouge et bleu (force = 0)
+    const DYN_WIDTH = 260;   // largeur logique des images de dynamomètre
+    const OVERLAP   = 3;     // chevauchement total au centre (px) -> dynamomètres un peu plus écartés
+    const HOOK_OFFSET = 10;  // crochet (unique) à 10 px du bord image côté centre
 
     // Offsets entre centre du point et centre de l’anneau des mains
-    const LEFT_HAND_OFFSET_X  = -9 - 1.3 * DYN_WIDTH / 9; // correction que tu as demandée
+    const LEFT_HAND_OFFSET_X  = -9 - 1.3 * DYN_WIDTH / 9;
     const LEFT_HAND_OFFSET_Y  = 15;
     const RIGHT_HAND_OFFSET_X = 41;
     const RIGHT_HAND_OFFSET_Y = 16;
@@ -209,9 +209,6 @@
       handRight.style.top  = (yPoint + RIGHT_HAND_OFFSET_Y - handCenterOffsetYR) + "px";
     }
 
-    // Met en place les deux dynamomètres autour du centre fixe de la scène
-    // et (très important) recalcule les positions des points rouge/bleu
-    // pour qu’ils soient aux extrémités extérieures.
     function updateDynamometers() {
       const centerX = scene.clientWidth / 2;
       const halfOverlap = OVERLAP / 2;
@@ -232,19 +229,16 @@
       dynamoRight.style.left  = dynRightLeft + "px";
       dynamoRight.style.width = DYN_WIDTH + "px";
 
-      // Points de traction sur les extrémités extérieures :
-      // - point rouge : extrémité gauche du dynamomètre gauche
-      //   (on suppose l’anneau main-côté gauche proche du bord gauche de l’image)
-      const outerOffsetLeft = HOOK_OFFSET; // ajustable si besoin après test
+      // Points de traction sur les extrémités extérieures
+      const outerOffsetLeft = HOOK_OFFSET;
       const pointLeftX = dynLeftLeft + outerOffsetLeft;
       pointLeft.style.left = pointLeftX + "px";
 
-      // - point bleu : extrémité droite du dynamomètre droit
-      const outerOffsetRight = HOOK_OFFSET; // symétrique
+      const outerOffsetRight = HOOK_OFFSET;
       const pointRightX = dynRightLeft + DYN_WIDTH - outerOffsetRight;
       pointRight.style.left = pointRightX + "px";
 
-      // Fenêtres centrées sur les corps des dynamomètres
+      // Fenêtres centrées sur les corps
       const xLcenter = dynLeftLeft + DYN_WIDTH / 2;
       const xRcenter = dynRightLeft + DYN_WIDTH / 2;
 
@@ -297,8 +291,6 @@
       const rectScene = scene.getBoundingClientRect();
       const x = e.clientX - rectScene.left;
 
-      // On déplace d’abord le point souhaité,
-      // puis updateAll remet dynamos/mains cohérents
       if (dragging === "left") {
         setPointXLeft(x);
       } else {
@@ -317,7 +309,6 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // On place les points pour que distance ≈ L0 (force = 0)
       const centerX = scene.clientWidth / 2;
       const halfDistance = L0 / 2;
       const xL = centerX - halfDistance;
@@ -335,7 +326,6 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
-    // Debug : coordonnées du clic + positions des images
     scene.addEventListener('click', function (e) {
       const rectScene = scene.getBoundingClientRect();
       const x = e.clientX - rectScene.left;
