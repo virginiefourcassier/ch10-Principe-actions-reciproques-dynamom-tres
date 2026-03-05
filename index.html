@@ -224,7 +224,6 @@
       const xL = getX(pointLeft);
       const xR = getX(pointRight);
 
-      // chevauchement léger sur le côté central
       dynamoLeft.style.left  = (xL - 5) + "px";
       dynamoLeft.style.width = DYN_WIDTH + "px";
 
@@ -302,9 +301,8 @@
     pointRight.addEventListener("mousedown", e => onMouseDown(e, "right"));
 
     function initPositions() {
-      // on place les points pour que les côtés intérieurs soient centrés à x = 450
-      const xL = 200; // bord intérieur droit du dynamo gauche à 450
-      const xR = 700; // bord intérieur gauche du dynamo droit à 450
+      const xL = 224.45454597473145;
+      const xR = 730.4545459747314;
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
@@ -318,24 +316,11 @@
     window.addEventListener("load", initPositions);
     window.addEventListener("resize", initPositions);
 
-    // Debug : coordonnées du clic + positions des images
     scene.addEventListener('click', function (e) {
-      const rectScene = scene.getBoundingClientRect();
-      const x = e.clientX - rectScene.left;
-      const y = e.clientY - rectScene.top;
+      const rect = scene.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
       console.log('CLICK scène : x = ' + x + ', y = ' + y);
-
-      const imgs = scene.querySelectorAll('img');
-      imgs.forEach(img => {
-        const r = img.getBoundingClientRect();
-        const leftInScene = r.left - rectScene.left;
-        const topInScene  = r.top  - rectScene.top;
-        console.log(
-          (img.id || img.src),
-          'left =', leftInScene,
-          'top =', topInScene
-        );
-      });
     });
   </script>
 </body>
