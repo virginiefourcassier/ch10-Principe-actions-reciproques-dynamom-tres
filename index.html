@@ -29,6 +29,7 @@
       position: absolute;
       height: 160px;
       pointer-events: none;
+      z-index: 30;
     }
 
     .dynamo {
@@ -37,6 +38,16 @@
       height: 60px;
       object-fit: contain;
       pointer-events: none;
+      z-index: 10;
+    }
+
+    .dynamoSansCrochet {
+      position: absolute;
+      top: 150px;
+      height: 60px;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 20;
     }
 
     .dragPoint {
@@ -48,6 +59,7 @@
       border: 2px solid #333;
       box-sizing: border-box;
       top: 180px;
+      z-index: 40;
     }
     #pointLeft  { background: red;  transform: translate(-50%, -50%); }
     #pointRight { background: blue; transform: translate( 50%, -50%); }
@@ -61,6 +73,7 @@
       border-radius: 4px;
       border: 1px solid #333;
       background: white;
+      z-index: 25;
     }
 
     .tape {
@@ -96,11 +109,15 @@
     <img id="handLeft"  class="hand" src="maingauche.png"  alt="">
     <img id="handRight" class="hand" src="maindroite.png" alt="">
 
-    <!-- Dynamomètres -->
-    <img id="dynamoLeft"  class="dynamo" src="dynamo_g.png"  alt="">
-    <img id="dynamoRight" class="dynamo" src="dynamo_d.png"  alt="">
+    <!-- Dynamomètres FIXES avec crochet -->
+    <img id="dynamoLeftFixed"  class="dynamo" src="dynamo_g.png"  alt="">
+    <img id="dynamoRightFixed" class="dynamo" src="dynamo_d.png"  alt="">
 
-    <!-- Points de traction (poignées) -->
+    <!-- Dynamomètres MOBILES sans crochet -->
+    <img id="dynamoLeftMov"  class="dynamoSansCrochet" src="dynamo_g_sans crochet.png"  alt="">
+    <img id="dynamoRightMov" class="dynamoSansCrochet" src="dynamo_d_sans crochet.png" alt="">
+
+    <!-- Points de traction -->
     <div id="pointLeft"  class="dragPoint"></div>
     <div id="pointRight" class="dragPoint"></div>
 
@@ -125,29 +142,38 @@
     // Constantes physiques / géométriques
     const F0        = 0;
     const k         = 0.04;
-    const L0        = 260;   // distance "repos" entre les points rouge et bleu (force = 0)
-    const DYN_WIDTH = 260;   // largeur logique des images de dynamomètre
+    const L0        = 260;   // distance "repos" entre points rouge et bleu (force = 0)
+    const DYN_WIDTH = 260;   // largeur logique
     const OVERLAP   = 3;     // chevauchement total au centre (px)
-    const HOOK_OFFSET = 10;  // crochet (unique) à 10 px du bord image côté centre
+    const HOOK_OFFSET = 10;  // crochet à 10 px du bord image côté centre
 
     // Offsets entre centre du point et centre de l’anneau des mains
-    const LEFT_HAND_OFFSET_X  = -9 - 1.3 * DYN_WIDTH / 9;
+    // Version précédente : LEFT = ((...)+5+3) - 3 ; RIGHT = ((...)+10 + 3)
+    // On rapproche chaque main de 4 px vers l’intérieur :
+    // gauche : +4, droite : -4
+    const LEFT_HAND_OFFSET_X  = ((-9 - 1.3 * DYN_WIDTH / 9) + 5 + 3) - 3 + 4; // -3 -> +1
     const LEFT_HAND_OFFSET_Y  = 15;
-    const RIGHT_HAND_OFFSET_X = 41;
+    const RIGHT_HAND_OFFSET_X = ((41 - 10) - 5) + 10 + 3 - 4;                // +13 -> +9
     const RIGHT_HAND_OFFSET_Y = 16;
 
-    const scene       = document.getElementById("scene");
-    const pointLeft   = document.getElementById("pointLeft");
-    const pointRight  = document.getElementById("pointRight");
-    const handLeft    = document.getElementById("handLeft");
-    const handRight   = document.getElementById("handRight");
-    const dynamoLeft  = document.getElementById("dynamoLeft");
-    const dynamoRight = document.getElementById("dynamoRight");
-    const windowLeft  = document.getElementById("windowLeft");
-    const windowRight = document.getElementById("windowRight");
-    const tapeLeft    = document.getElementById("tapeLeft");
-    const tapeRight   = document.getElementById("tapeRight");
-    const resetBtn    = document.getElementById("resetBtn");
+    // Offsets manuels pour les dynamos sans crochet
+    const RIGHT_MOV_OFFSET_X = 26;
+    const LEFT_MOV_OFFSET_X  = 0;
+
+    const scene          = document.getElementById("scene");
+    const pointLeft      = document.getElementById("pointLeft");
+    const pointRight     = document.getElementById("pointRight");
+    const handLeft       = document.getElementById("handLeft");
+    const handRight      = document.getElementById("handRight");
+    const dynamoLeftFix  = document.getElementById("dynamoLeftFixed");
+    const dynamoRightFix = document.getElementById("dynamoRightFixed");
+    const dynamoLeftMov  = document.getElementById("dynamoLeftMov");
+    const dynamoRightMov = document.getElementById("dynamoRightMov");
+    const windowLeft     = document.getElementById("windowLeft");
+    const windowRight    = document.getElementById("windowRight");
+    const tapeLeft       = document.getElementById("tapeLeft");
+    const tapeRight      = document.getElementById("tapeRight");
+    const resetBtn       = document.getElementById("resetBtn");
 
     let dragging = null;
 
@@ -163,15 +189,15 @@
     }
 
     function setPointXLeft(x) {
-      const min = 60;
-      const max = scene.clientWidth / 2 - 40;
+      const min = 40;
+      const max = scene.clientWidth / 2 - 60;
       const clamped = Math.max(min, Math.min(max, x));
       pointLeft.style.left = clamped + "px";
     }
 
     function setPointXRight(x) {
-      const min = scene.clientWidth / 2 + 40;
-      const max = scene.clientWidth - 60;
+      const min = scene.clientWidth / 2 + 60;
+      const max = scene.clientWidth - 40;
       const clamped = Math.max(min, Math.min(max, x));
       pointRight.style.left = clamped + "px";
     }
@@ -209,42 +235,41 @@
       handRight.style.top  = (yPoint + RIGHT_HAND_OFFSET_Y - handCenterOffsetYR) + "px";
     }
 
-    function updateDynamometers() {
+    function updateFixedDynamometers() {
       const centerX = scene.clientWidth / 2;
       const halfOverlap = OVERLAP / 2;
 
-      // Positions des crochets (uniques) au centre, avec léger chevauchement
-      const hookLeftX  = centerX + halfOverlap; // crochet du dynamomètre gauche
-      const hookRightX = centerX - halfOverlap; // crochet du dynamomètre droit
+      const hookLeftX  = centerX + halfOverlap;
+      const hookRightX = centerX - halfOverlap;
 
-      // Dynamomètre gauche :
-      // crochet = bord droit de l’image - HOOK_OFFSET
       const dynLeftLeft = hookLeftX - (DYN_WIDTH - HOOK_OFFSET);
-      dynamoLeft.style.left  = dynLeftLeft + "px";
-      dynamoLeft.style.width = DYN_WIDTH + "px";
+      dynamoLeftFix.style.left = dynLeftLeft + "px";
 
-      // Dynamomètre droit :
-      // crochet = bord gauche de l’image + HOOK_OFFSET
       const dynRightLeft = hookRightX - HOOK_OFFSET;
-      dynamoRight.style.left  = dynRightLeft + "px";
-      dynamoRight.style.width = DYN_WIDTH + "px";
+      dynamoRightFix.style.left = dynRightLeft + "px";
+    }
 
-      // Points de traction sur les extrémités extérieures
-      const outerOffsetLeft = HOOK_OFFSET;
-      let pointLeftX = dynLeftLeft + outerOffsetLeft;
-      // décalage supplémentaire : 5 px vers la gauche
-      pointLeftX -= 5;
-      pointLeft.style.left = pointLeftX + "px";
+    function updateMovingDynamometers() {
+      const sceneRect = scene.getBoundingClientRect();
 
-      const outerOffsetRight = HOOK_OFFSET;
-      let pointRightX = dynRightLeft + DYN_WIDTH - outerOffsetRight;
-      // décalage supplémentaire : 3 px vers la droite
-      pointRightX += 3;
-      pointRight.style.left = pointRightX + "px";
+      const rectLeftFix  = dynamoLeftFix.getBoundingClientRect();
+      const dynLeftLeftReal = rectLeftFix.left - sceneRect.left;
+      dynamoLeftMov.style.left = (dynLeftLeftReal + LEFT_MOV_OFFSET_X) + "px";
 
-      // Fenêtres centrées sur les corps
-      const xLcenter = dynLeftLeft + DYN_WIDTH / 2;
-      const xRcenter = dynRightLeft + DYN_WIDTH / 2;
+      const rectRightFix = dynamoRightFix.getBoundingClientRect();
+      const dynRightLeftReal  = rectRightFix.left - sceneRect.left;
+      const dynRightRightReal = dynRightLeftReal + rectRightFix.width;
+
+      dynamoRightMov.style.left = (dynRightRightReal + RIGHT_MOV_OFFSET_X - DYN_WIDTH) + "px";
+    }
+
+    function updateWindows() {
+      const leftRect  = dynamoLeftFix.getBoundingClientRect();
+      const rightRect = dynamoRightFix.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
+
+      const xLcenter = leftRect.left  - sceneRect.left + leftRect.width  / 2;
+      const xRcenter = rightRect.left - sceneRect.left + rightRect.width / 2;
 
       windowLeft.style.left  = xLcenter + "px";
       windowLeft.style.transform = "translateX(-50%)";
@@ -278,8 +303,10 @@
     }
 
     function updateAll() {
-      updateDynamometers();
+      updateFixedDynamometers();
+      updateMovingDynamometers();
       updateHands();
+      updateWindows();
       updateForceAndTapes();
     }
 
@@ -315,8 +342,11 @@
     function initPositions() {
       const centerX = scene.clientWidth / 2;
       const halfDistance = L0 / 2;
-      const xL = centerX - halfDistance;
-      const xR = centerX + halfDistance;
+      const xL0 = centerX - halfDistance;
+      const xR0 = centerX + halfDistance;
+
+      const xL = xL0 - 111;  // rouge
+      const xR = xR0 + 103;  // bleu
 
       pointLeft.style.left  = xL + "px";
       pointRight.style.left = xR + "px";
@@ -344,7 +374,8 @@
         console.log(
           (img.id || img.src),
           'left =', leftInScene,
-          'top =', topInScene
+          'top =', topInScene,
+          'width =', r.width
         );
       });
     });
